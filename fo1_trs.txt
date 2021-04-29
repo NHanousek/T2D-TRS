@@ -1,0 +1,34 @@
+Relaxation, Number of culverts
+0.2 3 ! One turbine, One sluice gate, One control point
+I1  I2  CE1 CE2 CS1 CS2 LRG  HAUT1 CLP LBUS Z1  Z2  CV C56 CV5 C5 CT HAUT2 FRIC  LENGTH CIRC D1 D2 A1 A2 AA
+101 102 1.0 1.0 1.0 1.0  8.0 -1.5  1   0.95 144 144 0  0   0   0  0  -1.5  0     0      1    0  0  0  0  1
+201 202 1.1 1.2 1.0 1.0 16.0 -5.0  2   0    0   0   0  0   0   0  0  -5.0  0.015 30     0    0  0  0  0  1
+301 302 0.0 0.0 0.0 0.0  0.0  0.0  0   0    0   0   0  0   0   0  0   0    0     0      0    0  0  0  0  1
+
+! Key     Old use
+! I1      First culvert point           Upstream point
+! I2      Second culvert point          Downstream point
+! CE1     Head loss coeff as inlet p1   Ebb head loss coeff generate/sluice
+! CE2     Head loss coedd as inlet p2   Flood head loss coeff generate/sluice
+! CS1     Head loss coeff outlet p1     Ebb head loss coeff pumping
+! CS2     Head loss coeff outlet p2     Flood head loss coeff pumping
+! LRG     Width of the culvert          Width of sluice gate, turbine diameter
+! HAUT1   Height of construction p1     Minimum height for safe operation at p1
+! CLP     Flow control type             Culvert type: 1 = Turbine, 2 = Sluice, 0 = control
+! LBUS    Linear head loss in culvert   Turbine head loss when sluicing
+! Z1      Level of inlet/outlet at p1   Turbine draft tube area at p1
+! Z2      Level of inlet/outlet at p2   Turbine draft tube area at p2
+! CV      Loss coeff due to valve       unused
+! C56     Constant to determ flow type  unused
+! CV5     Correction for type 5 flow    unused
+! C5      Correction for type 5 flow    unused
+! CT      Loss coeff for trash screen   unused
+! HAUT2   Height of construction p2     Minimum height for safe operation at p2
+! FRIC    Manning Strickler coeff       Friction of the sluice gate sides?
+! LENGTH  Length of the culvert         Length of sluice gate
+! CIRC    Shape: 1=circle, 0=Rect       Circular or rectangular sluice gate
+! D1      Angle of pipe-bottom p1       SAME/Unused
+! D2      Angle of pipe-bottom p2       SAME/Unused
+! A1      Angle of pipe-x_axis p1       SAME/Unused
+! A2      Angle of pipe-x_axis p2       SAME/Unused
+! AA      1: Auto angles, 2: User       1: Auto individual, 2: User, 3: Mean-type
