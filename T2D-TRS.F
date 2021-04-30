@@ -75,10 +75,10 @@
 !   Simple linear interpolation, to be used in this module
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
-      FUNCTION TRS_INTERP(X_NEW,X1,X2,Y1,Y2)
-        REAL :: TRS_INTERP,Y_NEW,X1,Y1,X2,Y2
+      REAL FUNCTION TRS_INTERP(X_NEW,X1,X2,Y1,Y2) RESULT(INTERP)
         IMPLICIT NONE
-          Y_NEW = Y1 + (X_NEW - X1) * (Y2 - Y1) / (X2 - X1)
+        REAL :: X_NEW,X1,X2,Y1,Y2
+          INTERP = Y1 + (X_NEW - X1) * (Y2 - Y1) / (X2 - X1)
         RETURN
       END FUNCTION TRS_INTERP
 !
@@ -88,29 +88,34 @@
 !   at a given head difference.
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
-      REAL FUNCTION TRS_CALC(HEAD,HEADS,VALUES)
+      REAL FUNCTION TRS_CALC(HEAD,HEADS,VALUES) RESULT(CALC)
+        IMPLICIT NONE
         REAL :: HEAD
         REAL, DIMENSION(:) :: HEADS,VALUES
         INTEGER :: I,HSIZE,VSIZE,SIGN
-        REAL :: TRS_CALC,HD
-        IMPLICIT NONE
+        REAL :: HD
 
         HD = ABS(HEAD)
         HSIZE = SIZE(HEADS)
         VSIZE = SIZE(VALUES)
-        SIGN = (HEAD > 0.0) - (HEAD < 0.0)
+
+        IF (HEAD.LE.0.0) THEN
+          SIGN = -1
+        ELSE
+          SIGN = 1
+        ENDIF
 
         IF (HSIZE.EQ.VSIZE) THEN
           IF (HD.LE.HEADS(10)) THEN
-            TRS_CALC = SIGN*VALUES(1)
+            CALC = SIGN*VALUES(1)
             RETURN
-          ELSEIF (HD.GE.HEADS(HSIZE))
-            TRS_CALC = SIGN*VALUES(VSIZE)
+          ELSEIF (HD.GE.HEADS(HSIZE)) THEN
+            CALC = SIGN*VALUES(VSIZE)
             RETURN
           ELSE
             DO I = 2,VSIZE
               IF ((HD.GE.HEADS(I-1)).AND.(HD.LE.HEADS(I))) THEN
-                TRS_CALC = SIGN*TRS_INTERP(HD,HEADS(I-1),
+                CALC = SIGN*TRS_INTERP(HD,HEADS(I-1),
      &HEADS(I),VALUES(I-1),VALUES(I))
                 RETURN
               ENDIF
@@ -118,7 +123,7 @@
           ENDIF
         ELSE
           WRITE(*,*)'UNEQUAL ARRAYS USED IN TRS_CALC FUNCTION'
-          TRS_CALC = 0.0
+          CALC = 0.0
         ENDIF
         RETURN
       END FUNCTION TRS_CALC
@@ -128,13 +133,13 @@
 !   Applies a sinusoidal ramp function from the phase and ramp times
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
-      REAL FUNCTION TRS_RAMP(RAMPTIME,PHASETIME)
-        REAL :: RAMPTIME, PHASETIME
-        REAL :: TRS_RAMP
+      REAL FUNCTION TRS_RAMP(RAMPTIME,PHASETIME) RESULT(RMP)
+        IMPLICIT NONE
+        REAL :: RAMPTIME,PHASETIME
         IF (PHASETIME.GE.RAMPTIME) THEN
-          TRS_RAMP = 1
+          RMP = 1
         ELSE
-          TRS_RAMP = (1 - COS(3.1415926*PHASETIME/RAMPTIME))/2
+          RMP = (1 - COS(3.1415926*PHASETIME/RAMPTIME))/2
         ENDIF
         RETURN
       END FUNCTION TRS_RAMP
@@ -146,17 +151,16 @@
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
       SUBROUTINE TRS_FLEXV(CT)
-      IMPLICIT NONE
+      REAL,INTENT(IN) :: CT
       INTEGER,INTENT(IN)  :: N_FLEX
       REAL,DIMENSION(:),INTENT(IN) :: FLX_TIMES
-      REAL,DIMENSION(:),INTENT(IN) :: H_STARTS,H_ENDS,TURB_CHARTS
-      REAL,DIMENSION(:),INTENT(IN) :: PUMP_TARGS,PUMP_CHARTS
-      REAL,INTENT(INOUT) :: H_START,H_END,TURB_CHART
-      REAL,INTENT(INOUT) :: PUMP_TARG,PUMP_CHART
-      REAL :: CT
+      REAL,DIMENSION(:),INTENT(IN) :: H_STARTS,H_ENDS,PUMP_TARGS
+      REAL,DIMENSION(:),INTENT(IN) :: TURB_CHARTS,PUMP_CHARTS
+      REAL,INTENT(OUT) :: H_START,H_END,TURB_CHART,RAMP
+      REAL,INTENT(OUT) :: PUMP_TARG,PUMP_CHART
       INTEGER :: I
 
-      IF (CT.LE.FLX_TIME(1)) THEN
+      IF (CT.LE.FLX_TIMES(1)) THEN
         !WARMUP PERIOD
         H_START = 1.0E16 !Do not enter generation
         H_END = 0.0
@@ -164,11 +168,15 @@
         PUMP_TARG = 0.0
         PUMP_CHART = 1
         RETURN
-      ELSEIF (CT.GE.FLX_TIMES(N_FLEX))
-        LOOP = N_FLEX
+      ELSEIF (CT.GE.FLX_TIMES(N_FLEX)) THEN
+        H_START = H_STARTS(N_FLEX)
+        H_END = H_ENDS(N_FLEX)
+        TURB_CHART = TURB_CHARTS(N_FLEX)
+        PUMP_TARG = PUMP_TARGS(N_FLEX)
+        PUMP_CHART = PUMP_CHARTS(N_FLEX)
         RETURN
       ELSE
-        DO I = 2,NFLEX
+        DO I = 2,N_FLEX
           IF ((CT.GE.FLX_TIMES(I-1)).AND.(CT.LT.FLX_TIMES(I))) THEN
             H_START = H_STARTS(I-1)
             H_END = H_ENDS(I-1)
@@ -183,14 +191,14 @@
       END SUBROUTINE TRS_FLEXV
 
       SUBROUTINE TRS_NEW_MODE(CT)
-      IMPLICIT NONE
-      REAL,INTENT(IN) :: H_START,H_END,TURB_CHART,CT
-      REAL,INTENT(IN) :: PUMP_TARG,PUMP_CHART,RAMPTIME
-      REAL,INTENT(IN) :: HEADDIFF,WL_IN,WL_OUT
-      REAL,INTENT(IN) :: MAX_GEN,MAX_HOLD,MAX_SLUICE,MAX_PUMP
-      INTEGER,INTENT(INOUT) :: MODE
-      REAL,INTENT(INOUT) :: PREV_SWITCH,RAMP
-      LOGICAL,INTENT(IN) :: ISPUMPING,IS2WAY
+      REAL,INTENT(IN) :: CT!, TRS_RAMP
+C      REAL,INTENT(IN) :: H_START,H_END,TURB_CHART
+C      REAL,INTENT(IN) :: PUMP_TARG,PUMP_CHART,RAMPTIME
+C      REAL,INTENT(IN) :: HEADDIFF,WL_IN,WL_OUT
+C      REAL,INTENT(IN) :: MAX_GEN,MAX_HOLD,MAX_SLUICE,MAX_PUMP
+C      INTEGER,INTENT(INOUT) :: MODE
+C      REAL,INTENT(INOUT) :: PREV_SWITCH,RAMP
+C      LOGICAL,INTENT(IN) :: ISPUMPING,IS2WAY
       REAL :: PHASE_T, HD
 
       HD = ABS(HEADDIFF)
@@ -241,6 +249,7 @@
               IF((HEADDIFF.LT.0.1).OR.PHASE_T.GT.MAX_HOLD) THEN
                 MODE = 6
                 PREV_SWITCH = CT
+              ENDIF
             ENDIF
           CASE (5)  !      5 : Flood generation
             IF ((HD.LE.H_END).OR.(PHASE_T.GT.MAX_HOLD)) THEN
@@ -248,13 +257,14 @@
               PREV_SWITCH = CT
             ENDIF
           CASE (6)  !      6 : Flood sluicing
-          IF ((HD.LE.0.1).OR.(PHASE_T.GT.MAX_SLUICE)) THEN
-            IF (ISPUMPING) THEN
-              MODE = -2
-            ELSE
-              MODE = 1
+            IF ((HD.LE.0.1).OR.(PHASE_T.GT.MAX_SLUICE)) THEN
+              IF (ISPUMPING) THEN
+                MODE = -2
+              ELSE
+                MODE = 1
+              ENDIF
+              PREV_SWITCH = CT
             ENDIF
-            PREV_SWITCH = CT
           CASE (-2) !     -2 : FLood pumping
             IF ((WL_IN.GE.PUMP_TARG).OR.(PHASE_T.GT.MAX_PUMP)) THEN
               MODE = 1
@@ -269,4 +279,5 @@
       END SUBROUTINE TRS_NEW_MODE
 
       END MODULE TRS_T2D
+      END
 !     End of TRS_T2D
