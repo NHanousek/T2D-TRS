@@ -150,11 +150,11 @@
 !   definition
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
-      SUBROUTINE TRS_FLEXV(CT)
+      SUBROUTINE TRS_FLEX_VALUES(CT)
       REAL,INTENT(IN) :: CT
       INTEGER :: I
 
-      IF (CT.LE.FLX_TIMES(1)) THEN
+      IF (CT.LT.FLX_TIMES(1)) THEN
         !WARMUP PERIOD
         H_START = 1.0E16 !Do not enter generation
         H_END = 0.0
@@ -233,7 +233,7 @@
                 PREV_SWITCH = CT
               ENDIF
             ELSE !Ebb generation
-              IF((HEADDIFF.LT.0.1).OR.PHASE_T.GT.MAX_HOLD) THEN
+              IF((HEADDIFF.GT.0.1).OR.(PHASE_T.GT.MAX_HOLD)) THEN
                 MODE = 6
                 PREV_SWITCH = CT
               ENDIF
@@ -264,6 +264,11 @@
       RAMP = TRS_RAMP(RAMPTIME,PHASE_T)
       RETURN
       END SUBROUTINE TRS_NEW_MODE
+
+      MODULE TRS_READ_DATA()
+      !File with the tidal range scheme control parameters
+      NFO1=T2D_FILES(T2DFO1)%LU
+
 
       END MODULE TRS_T2D
       END
