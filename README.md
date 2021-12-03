@@ -55,3 +55,7 @@ Key input data information
  - A1      Angle of pipe-x_axis p1       SAME/Unused
  - A2      Angle of pipe-x_axis p2       SAME/Unused
  - AA      1: Auto angles, 2: User       1: Auto individual, 2: User, 3: Mean-type
+
+## Flowcharts
+
+### Mode Selection
