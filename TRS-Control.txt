@@ -1,0 +1,50 @@
+Demo tidal range scheme config file.
+RAMPTIME            0.25
+PREV_SWITCH         0.0
+MAX_GEN             12.0
+MAX_HOLD            8
+MAX_SLUICE          4
+MAX_PUMP            2
+IS2WAY              True
+ISFLEXIBLE          TRUE
+ISPUMPING           F
+ISPARALLELSLUICE    t
+MODE                0
+MODE_PREV           0
+N_HILLS_G           2
+N_HILLS_P           2
+LEN_HILLS_G         10
+LEN_HILLS_P         5
+N_FLEX              1
+PUMPTOLEVEL         TRUE
+END CONFIGS - Begin Hill charts.
+GENERATOR POWER
+0   0   0
+1   0   0.5
+2   2   0.75
+3   4   1.0
+4   6   1.5
+4.5 8   5
+5.7 8   5.5
+5.9 8   5.75
+6.0 8   5.875
+7.0 8   6.0
+8.0 8   6.0
+GENERATOR FLOW
+0   0   0
+1   0   0.5
+2   20   0.75
+3   40   1.0
+4   60   1.5
+4.5 80   5
+5.7 100   5.5
+5.9 125   5.75
+6.0 250   5.875
+7.0 500   6.0
+8.0 500   6.0
+PUMP POWER
+0 1.0 5.0
+1 10  5.0
+2 10  5.0
+4 10  5.0
+8 10  5.0
