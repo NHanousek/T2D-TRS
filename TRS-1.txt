@@ -7,34 +7,36 @@ MAX_SLUICE          4
 MAX_PUMP            2
 IS2WAY              True
 ISFLEXIBLE          TRUE
+FAKEPARMATER.       123.456
 ISPUMPING           F
 ISPARALLELSLUICE    t
 MODE                0
 MODE_PREV           0
 N_HILLS_G           2
 N_HILLS_P           2
-LEN_HILLS_G         10
+LEN_HILLS_G         11
 LEN_HILLS_P         5
 N_FLEX              5
 PUMPTOLEVEL         TRUE
+ORIG_DIAM_T         9.0
 !Begin Hill charts.
 !Head levels must be consistent for flow/power levels
 !but do not need to be the same for pump/generator
 !Must be in sequential order
-!FORMAT: HEADDIFF POWER_K1 POWER_K2
-!Must be the same size for each scheme, even if there are a lot of blanks
+!FORMAT - HEADDIFF POWER_K1 POWER_K2
+!Must be the same size for each scheme, even if there are a lot of zeros
 GENERATOR POWER
-0   0   0
-1   0   0.5
-2   2   0.75
-3   4   1.0
-4   6   1.5
-4.5 8   5
-5.7 8   5.5
-5.9 8   5.75
-6.0 8   5.875
-7.0 8   6.0
-8.0 8   6.0
+0.0   0.0   0.0
+1.0   0.0   0.5
+2.0   2.0   0.75
+3.0   4.0   1.0
+4.0  6.0   1.5
+4.5 8.0   5.0
+5.7 8.0   5.5
+5.9 8.0   5.75
+6.0 8.0   5.875
+7.0 8.0   6.0
+8.0 8.0   6.0
 GENERATOR FLOW
 0   0   0
 1   0   0.5
