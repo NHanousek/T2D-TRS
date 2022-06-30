@@ -4,10 +4,11 @@
 !     Contains the variables and functions
 !     that are used to define and run a tidal
 !     range energy scheme within the BUSE subroutine
+!     and should be able to run more than one at a time.
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !     INFO
 !     Head difference is Inside (aka upstream) - Outside (downstream)
-!     Flow from in to out = positive? (Check with the previous works)
+!     Flow from in to out = positive
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !     MODES:
 !      N : Description,         Start condition,  End condition,
@@ -39,11 +40,11 @@
       LOGICAL,SAVE :: G_PRNT_TRS = .TRUE. !true => print with graphical printout period
 !      INTEGER,SAVE :: NF_TRS              !Unit code for tidal range scheme file... may be pointless
       INTEGER,SAVE :: NUM_TRS = 1         !How many independant tidal range schemes...
-      REAL,SAVE :: TRS_TIME
+      REAL,SAVE    :: TRS_TIME
                                           !false => print with 'listing period'
 
 !     TEMPORAL CONTROLS - All in hours
-!     One for each TRS
+!     One for each Scheme
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: RAMPTIME      !How long to ramp between modes
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: PREV_SWITCH   !Time when lagoon last switched modes
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: MAX_GEN       !Maxmimum time before generation is auto ended
@@ -53,6 +54,7 @@
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: ORIG_DIAM_T   ! (m) Original diameter of Turbines used for the hill charts
 
 !     OPERATION CONFIGURATION
+!     One for each Scheme
       LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: IS2WAY           !Is the scheme in two way operation
       LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: ISFLEXIBLE       !Is the scheme in flexible operation
       LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: ISPUMPING        !Is the scheme using pumping
@@ -63,37 +65,41 @@
 
 !
 !     WATER LEVELS - Meters
+!     One for each Scheme
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: WL_IN,WL_OUT    !Water levels inside and outside, from control points
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: HEADDIFF        !Head difference = Inside - Outside
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: Q_TURB,Q_SLUICE !Flow rate in m3/s
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: POWER           !Power out(+ve)or in(-ve)
 
-
-!     DIMENSIONLESS
-      REAL,DIMENSION(:),ALLOCATABLE,SAVE :: RAMP           !Ramp Coefficient when changing modes
-
 !     HILL CHART PARAMETERS - Note that shared head levels are required for powers/flows
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE :: N_HILLS_G,N_HILLS_P     !Number of hill charts for (_G)eneration and (_P)umping
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE :: LEN_HILLS_G,LEN_HILLS_P !Length of hillcharts for (_G)eneration and (_P)umping
-      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE :: HEAD_G,HEAD_P     !Head levels for the hill charts
+!     One for each Hill chart
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE  :: N_HILLS_G,N_HILLS_P     !Number of hill charts for (_G)eneration and (_P)umping
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE  :: LEN_HILLS_G,LEN_HILLS_P !Length of hillcharts for (_G)eneration and (_P)umping
+      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE   :: HEAD_G,HEAD_P     !Head levels for the hill charts
       REAL,DIMENSION(:,:,:),ALLOCATABLE,SAVE :: POWER_G,FLOW_G  !Power/Flow for Generating
       REAL,DIMENSION(:,:,:),ALLOCATABLE,SAVE :: POWER_P,FLOW_P  !Power/Flow for Pumping
 
-
 !     Arrays and values for flexible operation
 !     Fixed operation is treated as flexible operation with one long period
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE  :: N_FLEX   !Number of flex periods
-      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE :: FLX_TIMES  !Start time of each flex period
-      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE :: H_STARTS,H_ENDS !Start and end piooints in those periods
-      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE :: PUMP_TARGS      !and the _CHARTS indicates the chart to use
-      INTEGER,DIMENSION(:,:),ALLOCATABLE,SAVE :: TURB_CHARTS
-      INTEGER,DIMENSION(:,:),ALLOCATABLE,SAVE :: PUMP_CHARTS
+!     One for each Scheme
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE  :: N_FLEX   !Number of flex periods for each scheme
+!     The flex arrays
+      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE    :: FLX_TIMES  ! Start time of each flex period (no overlap)
+      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE    :: H_STARTS,H_ENDS ! Start and end piooints in those periods
+      REAL,DIMENSION(:,:),ALLOCATABLE,SAVE    :: PUMP_TARGS      ! and the _CHARTS indicates the chart to use
+      INTEGER,DIMENSION(:,:),ALLOCATABLE,SAVE :: TURB_CHARTS ! turbines (generating)
+      INTEGER,DIMENSION(:,:),ALLOCATABLE,SAVE :: PUMP_CHARTS ! and pumping
+!     These variables move as time passes based on when we are and which value to use
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: H_START, H_END          !Head to start/end generation
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: TURB_CHART, PUMP_CHART  !Which turbine/pump chart to use
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: PUMP_TARG               !Target to pump to
 
+!     DIMENSIONLESS
+!     One for each Scheme
+      REAL,DIMENSION(:),ALLOCATABLE,SAVE :: RAMP           !Ramp Coefficient when changing modes
+
 !     TEMPORARY VARIABLES
-      REAL :: TMP_REAL = 0.0
+      REAL    :: TMP_REAL = 0.0
       INTEGER :: SCHEME = 1   !Which scheme are we operating with right now.
       INTEGER :: TMP_INT = 0
       INTEGER :: i,j,k,l,m,status = 0
@@ -199,7 +205,6 @@
       function to_upper(strIn) result(strOut)
 ! Adapted from http://www.star.le.ac.uk/~cgp/fortran.html (25 May 2012)
 ! Original author: Clive Page
-
       implicit none
 
       character(len=*), intent(in) :: strIn
@@ -244,20 +249,24 @@
       DO TRS =1,NUM_TRS
       IF (CT.LT.FLX_TIMES(TRS,1)) THEN
         !WARMUP PERIOD
-        H_START(TRS) = 1.0E16 !Do not enter generation
+        H_START(TRS) = 1000 !Do not enter generation
         H_END(TRS) = 0.0
         TURB_CHART(TRS) = 1
         PUMP_TARG(TRS) = 0.0
         PUMP_CHART(TRS) = 1
         RETURN
+
       ELSEIF (CT.GE.FLX_TIMES(TRS,N_FLEX(TRS))) THEN
+        !FINAL FLEX PERIOD ONWARDS
         H_START(TRS) = H_STARTS(TRS,N_FLEX(TRS))
         H_END(TRS) = H_ENDS(TRS,N_FLEX(TRS))
         TURB_CHART(TRS) = TURB_CHARTS(TRS,N_FLEX(TRS))
         PUMP_TARG(TRS) = PUMP_TARGS(TRS,N_FLEX(TRS))
         PUMP_CHART(TRS) = PUMP_CHARTS(TRS,N_FLEX(TRS))
         RETURN
+
       ELSE
+        !IN THE DYNAMIC FLEX PERIOD
         DO I = 2,N_FLEX(TRS)
           IF ((CT.GE.FLX_TIMES(TRS,I-1))
      &      .AND.(CT.LT.FLX_TIMES(TRS,I))) THEN
@@ -272,7 +281,13 @@
       ENDIF
       ENDDO
       END SUBROUTINE TRS_FLEX_VALUES
-
+!
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!   TRS_NEW_MODE
+!   Updates the operating mode of the tidal range schemes based on the
+!   decision tree and the current mode, CT only used to check phase
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!
       SUBROUTINE TRS_NEW_MODE(CT)
       REAL,INTENT(IN) :: CT!, TRS_RAMP
       REAL :: PHASE_T, HD
@@ -285,19 +300,20 @@
       IF (PHASE_T.GE.RAMPTIME(TRS)) THEN !If we have completed starting operation of this phase
         SELECT CASE(MODE(TRS))
           CASE (0)  !      0 : Initial sluicing warmup
+!           Ends when the start of flexing begins
             IF (CT.GE.FLX_TIMES(TRS,1)) THEN
               MODE(TRS) = 1  !      1 : High water holding
               PREV_SWITCH(TRS) = CT
             ENDIF
           CASE (1)  !      1 : High water holding
-            IF ((HD.GE.H_START(TRS))
-     &      .OR.(PHASE_T.GT.MAX_HOLD(TRS))) THEN
-              MODE(TRS) = 2  !      2 : Ebb generation
-              PREV_SWITCH(TRS) = CT
+            IF ((HD.GE.H_START(TRS))              ! Enough head difference
+     &      .OR.(PHASE_T.GT.MAX_HOLD(TRS))) THEN  ! Time limit reached
+              MODE(TRS) = 2                       ! 2 : Ebb generation
+              PREV_SWITCH(TRS) = CT               ! Update previous switch
             ENDIF
           CASE (2)  !      2 : Ebb generation
-            IF ((HD.LE.H_END(TRS))
-     &      .OR.(PHASE_T.GT.MAX_GEN(TRS))) THEN
+            IF ((HD.LE.H_END(TRS))                ! Head diff end triggered
+     &      .OR.(PHASE_T.GT.MAX_GEN(TRS))) THEN   ! Time limit reached
               IF (IS2WAY(TRS)) THEN
                 MODE(TRS) = 3  !      3 : Ebb sluicing
               ELSE
@@ -306,6 +322,8 @@
               PREV_SWITCH(TRS) = CT
             ENDIF
           CASE (3)  !      3 : Ebb sluicing
+!           HERE WE TAKE A FAIRLY BIG ASSUMPTION ABOUT HOW CLOSE TWO WATER LEVELS NEED
+!           TO BE TO COUNT AS BEING EQUAL, 0.1m MAY NEED SENSITIVITY TESTING
             IF ((HD.LE.0.1)
      &      .OR.(PHASE_T.GT.MAX_SLUICE(TRS))) THEN
               IF (ISPUMPING(TRS).AND.IS2WAY(TRS)) THEN
@@ -316,11 +334,12 @@
               PREV_SWITCH(TRS) = CT
             ENDIF
           CASE (-1) !     -1 : Ebb pumping
-            IF ((PUMPTOLEVEL(TRS)
+!         This is a big nasty fortran logical statement.
+            IF ((PUMPTOLEVEL(TRS) ! Pump to a physical level above the datum
      &          .AND.(WL_IN(TRS).LE.PUMP_TARG(TRS)))
-     &      .OR.(.NOT.(PUMPTOLEVEL(TRS))
+     &      .OR.(.NOT.(PUMPTOLEVEL(TRS)) ! Pump to a given head difference
      &          .AND.(HD.GE.PUMP_TARG(TRS)))
-     &      .OR.(PHASE_T.GE.MAX_PUMP(TRS))) THEN
+     &      .OR.(PHASE_T.GE.MAX_PUMP(TRS))) THEN ! Time limit reached
               MODE(TRS) = 4  !      4 : Low water holding
               PREV_SWITCH(TRS) = CT
             ENDIF
@@ -355,8 +374,10 @@
               PREV_SWITCH(TRS) = CT
             ENDIF
           CASE (-2) !     -2 : FLood pumping
-          IF ((PUMPTOLEVEL(TRS).AND.(WL_IN(TRS).GE.PUMP_TARG(TRS)))
-     &    .OR.(.NOT.(PUMPTOLEVEL(TRS)).AND.(HD.GE.PUMP_TARG(TRS)))
+          IF ((PUMPTOLEVEL(TRS)
+     &        .AND.(WL_IN(TRS).GE.PUMP_TARG(TRS)))
+     &    .OR.(.NOT.(PUMPTOLEVEL(TRS))
+     &        .AND.(HD.GE.PUMP_TARG(TRS)))
      &    .OR.(PHASE_T.GE.MAX_PUMP(TRS))) THEN
               MODE(TRS) = 1  !      1 : High water holding
               PREV_SWITCH(TRS) = CT
@@ -374,24 +395,39 @@
 !     Read the control data file
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
       ! RUDIMENTARY INPUT KEY VARIABLE PARSER.
+      ! CAN HANDLE
+      !     : and = as pair separators
+      !     / and ! as comment starters
       SUBROUTINE TRS_PARSE(LN,KWRD,VRBL)
-      CHARACTER(LEN=*),INTENT(IN) :: LN
-      CHARACTER(LEN=100),INTENT(OUT) :: KWRD,VRBL
-      INTEGER :: K,LENLN
+      CHARACTER(LEN=*),INTENT(IN) :: LN ! A line from the file
+      CHARACTER(LEN=100),INTENT(OUT) :: KWRD,VRBL ! Keyword and Variable
+      INTEGER :: K,LENLN,CMT  !iterator, length of line
       ! Default values, for cases where only the keyword is to be passed etc.
-      KWRD = TRIM(ADJUSTL(LN))
-      VRBL = 'NaN'
+      KWRD = TRIM(ADJUSTL(LN))  !Trim any preceeding or following blanks
+      VRBL = 'NaN'  !initial value
 
-      LENLN = LEN(LN)
+!     Strip any comments from the back of the line
+      IF ((INDEX(LN,'!').GE.1).OR.(INDEX(LN,'/').GE.1)) THEN
+        CMT=MIN(INDEX(LN,'!'),INDEX(LN,'/'))
+        IF (CMT.EQ.0) THEN
+            CMT=MAX(INDEX(LN,'!'),INDEX(LN,'/'))
+        ENDIF
+      ELSE
+        CMT = LEN(LN) + 1 ! set length of line
+      ENDIF
+
+!     Find the two separate chunks of text in the line
+
       IF ((INDEX(LN,'=').GT.1).OR.(INDEX(LN,':').GT.1)) THEN
         K = MAX(INDEX(LN,'='),INDEX(LN,':'))
         KWRD = TRIM(LN(1:k-1))
-        VRBL = TRIM(LN(k+1:LENLN))
+        VRBL = TRIM(LN(k+1:CMT-1))
       ELSE
-        DO K = 2,LENLN-1
+        DO K = 2,CMT-1
           IF ((LN(K:K).EQ.' ').AND.(LN(K+1:K+1).NE.' ')) THEN
-            KWRD = TRIM(LN(1:k))
-            VRBL = TRIM(LN(K+1:LENLN))
+!           Trimming and adjustl-ing them may be a bit belt + braces
+            KWRD = TRIM(ADJUSTL(LN(1:k)))
+            VRBL = TRIM(ADJUSTL(LN(K+1:CMT-1)))
             EXIT
           ENDIF
         END DO
@@ -402,8 +438,8 @@
       CHARACTER(LEN=*),INTENT(IN) :: K,V
         WRITE(*,*) '+-+-+-+-+-+-+-WARNING-+-+-+-+-+-+-+-+-+-+-+'
         WRITE(*,*) 'Unextpected key - variable pair:'
-        WRITE(*,*) 'Key: ',TRIM(K)
-        WRITE(*,*) 'Variable: ',TRIM(V)
+        WRITE(*,*) 'Key: ',TRIM(ADJUSTL(K))
+        WRITE(*,*) 'Variable: ',TRIM(ADJUSTL(V))
         WRITE(*,*) '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+'
       END SUBROUTINE TRS_KV_WARN
 
@@ -449,7 +485,7 @@
           ENDDO
           WRITE(*,*) ' '
         ENDIF
-
+!       Print it back to the console for user happiness
         WRITE(*,'(I10,A1,F9.3,A1)',ADVANCE='NO')ROW,' ',HEADS(ROW),' '
         DO COL = 1,SZ(2)
             WRITE(*,'(F9.3,A1)',ADVANCE='NO') ARRAY(ROW,COL),' '
@@ -462,11 +498,12 @@
 
       SUBROUTINE TRS_READ_DATAFILES(NF_TRS)
       !File with the tidal range scheme control parameters
+      !as key variable pairs, with comments if needed
 !      NFO1=T2D_FILES(T2DFO1)%LU
       INTEGER,INTENT(IN) :: NF_TRS
       INTEGER :: TRS
       CHARACTER(LEN=100) :: LINE,KEYWORD,VARIABLE
-      CHARACTER(LEN=9) :: TRS_FNAME
+      CHARACTER(LEN=20) :: TRS_FNAME
       LOGICAL :: ISOPEN = .FALSE.,PRNTKV
 
       IF (.NOT.ALLOCATED(WL_IN)) THEN
@@ -520,8 +557,14 @@
       TRS_TIME = 0.0
 
       DO TRS = 1,NUM_TRS
-!        WRITE(TRS_FNAME,'(A7,I1,A4)') '../TRS-',TRS,'.txt'
-        TRS_FNAME = 'TRS-1.txt'
+        IF (TRS.LE.9) THEN
+          WRITE(TRS_FNAME,'(A7,I1,A4)') '../TRS-',TRS,'.txt'
+        ELSEIF (TRS.LE.99) THEN
+          WRITE(TRS_FNAME,'(A7,I2,A4)') '../TRS-',TRS,'.txt'
+        ELSE ! if you want over 1000 TRS you have bigger problems.
+          WRITE(TRS_FNAME,'(A7,I3,A4)') '../TRS-',TRS,'.txt'
+        ENDIF
+        ! TRS_FNAME = 'TRS-1.txt'
         OPEN(UNIT=NF_TRS,FILE=TRS_FNAME,STATUS='OLD')
         INQUIRE(UNIT=NF_TRS,OPENED=ISOPEN)
 
@@ -534,9 +577,8 @@
         READ(NF_TRS,*) LINE !Header line
         WRITE(*,*) LINE
         READ(NF_TRS,'(A100)') LINE
-        DO WHILE((LINE(1:3).NE.'END').AND.
-     &           (LINE(1:3).NE.'End').AND.
-     &           (LINE(1:3).NE.'end'))
+        ! YOU CANNOT HAVE A VARIABLE WHOSE NAME STARTS WITH 'END' in some form
+        DO WHILE(TO_UPPER((LINE(1:3)).NE.'END')
 !          WRITE(*,*) LINE
           CALL TRS_PARSE(LINE,KEYWORD,VARIABLE)
 
@@ -837,14 +879,22 @@
       SUBROUTINE TRS_WRITE_RESULTS(OF_TRS)
       INTEGER,INTENT(IN) :: OF_TRS
       INTEGER :: TRS,STAT
-      CHARACTER(LEN=20) :: TRS_FNAME
+      CHARACTER(LEN=30) :: TRS_FNAME
       CHARACTER :: A = ','
       LOGICAL,SAVE :: RESULTS_FIRST = .TRUE.
 
       IF (RESULTS_FIRST) THEN
         TRS_TIME = 0.0
         DO TRS = 1,NUM_TRS
-          WRITE(TRS_FNAME,'(A7,I1,A12)')'../TRS-',TRS,'-Results.csv'
+          ! There may be a better way to do this but this should work so...
+          IF (TRS.LE.9) THEN
+            WRITE(TRS_FNAME,'(A7,I1,A12)') '../TRS-',TRS,'-Results.csv'
+          ELSEIF (TRS.LE.99) THEN
+            WRITE(TRS_FNAME,'(A7,I2,A12)') '../TRS-',TRS,'-Results.csv'
+          ELSE ! if you want over 1000 TRS you have bigger problems.
+            WRITE(TRS_FNAME,'(A7,I3,A12)') '../TRS-',TRS,'-Results.csv'
+          ENDIF
+
           OPEN(OF_TRS,FILE=TRS_FNAME,STATUS='REPLACE',IOSTAT=STAT)
           WRITE(OF_TRS,*)'TIME(hr),Z_OUT(mD),Z_IN(mD),HEADDIFF(m),',
      &      'MODE(-),Q_TURB(m3_s),Q_SLUICE(m3_s),POWER(MW),',
@@ -854,7 +904,15 @@
         RESULTS_FIRST = .FALSE.
       ENDIF
       DO TRS = 1,NUM_TRS
-        WRITE(TRS_FNAME,'(A7,I1,A12)')'../TRS-',TRS,'-Results.csv'
+        ! There may be a better way to do this but this should work so...
+        IF (TRS.LE.9) THEN
+          WRITE(TRS_FNAME,'(A7,I1,A12)') '../TRS-',TRS,'-Results.csv'
+        ELSEIF (TRS.LE.99) THEN
+          WRITE(TRS_FNAME,'(A7,I2,A12)') '../TRS-',TRS,'-Results.csv'
+        ELSE ! if you want over 1000 TRS you have bigger problems.
+          WRITE(TRS_FNAME,'(A7,I3,A12)') '../TRS-',TRS,'-Results.csv'
+        ENDIF
+
         OPEN(OF_TRS,FILE=TRS_FNAME,STATUS='OLD',
      &         ACCESS='APPEND',IOSTAT=STAT)
         WRITE(OF_TRS,*)TRS_TIME,A,
@@ -890,19 +948,49 @@
 
 !
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-!
-!
+!     TRS_FLOWS()
+!     This is a big boy, I'm pretty sure it should go through each
+!     culvert and identify:
+!       the correct TRS
+!         Mode of that TRS
+!           Type of culvert
+!             the flow through the culvert
+!     based on that.
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!     A Reminder on the culvert data and what it does now...
+! Key     Old use
+! I1      First culvert point           Upstream (or internal) point
+! I2      Second culvert point          Downstream (or external) point
+! CE1     Head loss coeff as inlet p1   Ebb head loss coeff generate/sluice
+! CE2     Head loss coedd as inlet p2   Flood head loss coeff generate/sluice
+! CS1     Head loss coeff outlet p1     Ebb head loss coeff pumping
+! CS2     Head loss coeff outlet p2     Flood head loss coeff pumping
+! LRG     Width of the culvert          Width of sluice gate, turbine diameter
+! HAUT1   Height of construction p1     Minimum water height for safe operation at p1
+! CLP     Flow control type             Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
+! LBUS    Linear head loss in culvert   Turbine Cd when sluicing
+! Z1      Level of inlet/outlet at p1   Turbine draft tube area at p1
+! Z2      Level of inlet/outlet at p2   Turbine draft tube area at p2
+! CV      Loss coeff due to valve       Weighting for control points
+! C56     Constant to determ flow type  Parrallel sluicing for turbine: 0 = FALSE, 1 = TRUE
+! CV5     Correction for type 5 flow    Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
+! C5      Correction for type 5 flow    unused
+! CT      Loss coeff for trash screen   Tidal Range Scheme Number!!!!!!!!!!!!!!!!!!!!!
+! HAUT2   Height of construction p2     Minimum water height for safe operation at p2
+! FRIC    Manning Strickler coeff       Friction of the sluice gate sides?
+! LENGTH  Length of the culvert         Length of sluice gate
+! CIRC    Shape: 1=circle, 0=Rect       Circular or rectangular sluice gate
+! D1      Angle of pipe-bottom p1       SAME/Unused
+! D2      Angle of pipe-bottom p2       SAME/Unused
+! A1      Angle of pipe-x_axis p1       SAME/Unused
+! A2      Angle of pipe-x_axis p2       SAME/Unused
+! AA      1: Auto angles, 2: User       1: Auto individual, 2: User, 3: Mean-Bank
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
-!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-!     MODES:
-!      N : Description,         Start condition,  End condition,
-
-!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
       SUBROUTINE TRS_FLOWS()
       INTEGER :: TRS,CULV
       !Calculate the base flows, and then scale, ramp, and apply them.
-      REAL,DIMENSION(NUM_TRS),ALLOCATABLE :: QG_BASE,QP_BASE
+      REAL,DIMENSION(NUM_TRS),ALLOCATABLE :: Q_BASE_G,Q_BASE_P
       REAL :: T_AREA,S_AREA,T_SF,PHASE_TIME
       ! Sluice flows calculated with orifice equation.
       DO TRS = 1,NUM_TRS
