@@ -1,4 +1,4 @@
-Demo tidal range scheme config file a ! will act as comment at start as line
+Demo tidal range scheme config file a ! will act as comment at start/within of line
 RAMPTIME            0.25
 PREV_SWITCH         0.0
 MAX_GEN             12.0
@@ -7,7 +7,7 @@ MAX_SLUICE          4
 MAX_PUMP            2
 IS2WAY              True
 ISFLEXIBLE          TRUE
-FAKEPARMATER.       123.456
+FAKEPARAMETER       123.456
 ISPUMPING           F
 ISPARALLELSLUICE    t
 MODE                0

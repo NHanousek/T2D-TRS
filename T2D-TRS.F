@@ -35,18 +35,17 @@
       IMPLICIT NONE
 
 !     MODULE CONTROL
-      LOGICAL,SAVE :: FIRST = .TRUE.      !Is this the first call of the module
+      LOGICAL,SAVE :: TRS_FIRST = .TRUE.      !Is this the first call of the module
       LOGICAL,SAVE :: WRITE_TRS = .FALSE. !Print the TRS data to the file this timestep
       LOGICAL,SAVE :: G_PRNT_TRS = .TRUE. !true => print with graphical printout period
-!      INTEGER,SAVE :: NF_TRS              !Unit code for tidal range scheme file... may be pointless
-      INTEGER,SAVE :: NUM_TRS = 1         !How many independant tidal range schemes...
+      INTEGER,SAVE :: NUM_TRS = 0         !How many independant tidal range schemes...
       REAL,SAVE    :: TRS_TIME
                                           !false => print with 'listing period'
 
 !     TEMPORAL CONTROLS - All in hours
 !     One for each Scheme
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: RAMPTIME      !How long to ramp between modes
-      REAL,DIMENSION(:),ALLOCATABLE,SAVE :: PREV_SWITCH   !Time when lagoon last switched modes
+      REAL,DIMENSION(:),ALLOCATABLE,SAVE :: PREV_SWITCH   !Time when scheme last switched modes
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: MAX_GEN       !Maxmimum time before generation is auto ended
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: MAX_HOLD      !Maxmimum time before holding is auto ended
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: MAX_SLUICE    !Maxmimum time before sluicing is auto ended
@@ -59,11 +58,10 @@
       LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: ISFLEXIBLE       !Is the scheme in flexible operation
       LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: ISPUMPING        !Is the scheme using pumping
       LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: PUMPTOLEVEL      !Pump to level or head difference
-      LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: ISPARALLELSLUICE !Is parallel sluicing being used
+      ! LOGICAL,DIMENSION(:),ALLOCATABLE,SAVE :: ISPARALLELSLUICE !Is parallel sluicing being used (DEPRECATED AS THIS IS NOW DECLARED AT CULVERT)
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE :: MODE             !What operational mode is the scheme in
       INTEGER,DIMENSION(:),ALLOCATABLE,SAVE :: MODE_PREV        !What mode was the scheme in prevously
 
-!
 !     WATER LEVELS - Meters
 !     One for each Scheme
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: WL_IN,WL_OUT    !Water levels inside and outside, from control points
@@ -78,6 +76,8 @@
       REAL,DIMENSION(:,:),ALLOCATABLE,SAVE   :: HEAD_G,HEAD_P     !Head levels for the hill charts
       REAL,DIMENSION(:,:,:),ALLOCATABLE,SAVE :: POWER_G,FLOW_G  !Power/Flow for Generating
       REAL,DIMENSION(:,:,:),ALLOCATABLE,SAVE :: POWER_P,FLOW_P  !Power/Flow for Pumping
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE  :: PREV_I_POWER_G,PREV_I_FLOW_G !Save the position of the iterator (can lead to large speedups)
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE  :: PREV_I_POWER_P,PREV_I_FLOW_P !Save the position of the iterator (can lead to large speedups)
 
 !     Arrays and values for flexible operation
 !     Fixed operation is treated as flexible operation with one long period
@@ -89,10 +89,12 @@
       REAL,DIMENSION(:,:),ALLOCATABLE,SAVE    :: PUMP_TARGS      ! and the _CHARTS indicates the chart to use
       INTEGER,DIMENSION(:,:),ALLOCATABLE,SAVE :: TURB_CHARTS ! turbines (generating)
       INTEGER,DIMENSION(:,:),ALLOCATABLE,SAVE :: PUMP_CHARTS ! and pumping
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE   :: PREV_I_FLX_TIMES !Save the position of the iterator (can lead to large speedups)
 !     These variables move as time passes based on when we are and which value to use
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: H_START, H_END          !Head to start/end generation
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: TURB_CHART, PUMP_CHART  !Which turbine/pump chart to use
       REAL,DIMENSION(:),ALLOCATABLE,SAVE :: PUMP_TARG               !Target to pump to
+
 
 !     DIMENSIONLESS
 !     One for each Scheme
@@ -254,6 +256,7 @@
         TURB_CHART(TRS) = 1
         PUMP_TARG(TRS) = 0.0
         PUMP_CHART(TRS) = 1
+        PREV_I_FLX_TIMES(TRS) = 1
         RETURN
 
       ELSEIF (CT.GE.FLX_TIMES(TRS,N_FLEX(TRS))) THEN
@@ -263,6 +266,17 @@
         TURB_CHART(TRS) = TURB_CHARTS(TRS,N_FLEX(TRS))
         PUMP_TARG(TRS) = PUMP_TARGS(TRS,N_FLEX(TRS))
         PUMP_CHART(TRS) = PUMP_CHARTS(TRS,N_FLEX(TRS))
+        PREV_I_FLX_TIMES(TRS) = N_FLEX(TRS)
+        RETURN
+        ! SAME FLEX PERIOD AS LAST TIME
+      ELSEIF ((CT.GE.FLX_TIMES(TRS,PREV_I_FLX_TIMES(TRS)-1))
+     &  .AND.(CT.LT.FLX_TIMES(TRS,PREV_I_FLX_TIMES(TRS)))) THEN
+        H_START(TRS) = H_STARTS(TRS,PREV_I_FLX_TIMES(TRS)-1)
+        H_END(TRS) = H_ENDS(TRS,PREV_I_FLX_TIMES(TRS)-1)
+        TURB_CHART(TRS) = TURB_CHARTS(TRS,PREV_I_FLX_TIMES(TRS)-1)
+        PUMP_TARG(TRS) = PUMP_TARGS(TRS,PREV_I_FLX_TIMES(TRS)-1)
+        PUMP_CHART(TRS) = PUMP_CHARTS(TRS,PREV_I_FLX_TIMES(TRS)-1)
+        PREV_I_FLX_TIMES(TRS) = PREV_I_FLX_TIMES(TRS)
         RETURN
 
       ELSE
@@ -275,6 +289,7 @@
             TURB_CHART(TRS) = TURB_CHARTS(TRS,I-1)
             PUMP_TARG(TRS) = PUMP_TARGS(TRS,I-1)
             PUMP_CHART(TRS) = PUMP_CHARTS(TRS,I-1)
+            PREV_I_FLX_TIMES(TRS) = I
             RETURN
           ENDIF
         ENDDO
@@ -386,6 +401,7 @@
 !       UPDATE PHASE TIMING?
 !       PHASE_T = CT - PREV_SWITCH(TRS)
       ENDIF
+      PHASE_T = CT - PREV_SWITCH(TRS)
       RAMP(TRS) = TRS_RAMP(RAMPTIME(TRS),PHASE_T)
       ENDDO
       RETURN
@@ -554,6 +570,27 @@
         ALLOCATE(POWER(NUM_TRS),STAT=STATUS)
         CALL TRS_STAT(STATUS,'POWER')
       ENDIF
+      IF (.NOT.ALLOCATED(PREV_I_FLX_TIMES)) THEN
+        ALLOCATE(PREV_I_FLX_TIMES(NUM_TRS),STAT=STATUS)
+        CALL TRS_STAT(STATUS,'PREV_I_FLX_TIMES')
+      ENDIF
+      IF (.NOT.ALLOCATED(PREV_I_FLOW_G)) THEN
+        ALLOCATE(PREV_I_FLOW_G(NUM_TRS),STAT=STATUS)
+        CALL TRS_STAT(STATUS,'PREV_I_FLOW_G')
+      ENDIF
+      IF (.NOT.ALLOCATED(PREV_I_FLOW_P)) THEN
+        ALLOCATE(PREV_I_FLOW_P(NUM_TRS),STAT=STATUS)
+        CALL TRS_STAT(STATUS,'PREV_I_FLOW_P')
+      ENDIF
+      IF (.NOT.ALLOCATED(PREV_I_POWER_G)) THEN
+        ALLOCATE(PREV_I_POWER_G(NUM_TRS),STAT=STATUS)
+        CALL TRS_STAT(STATUS,'PREV_I_POWER_G')
+      ENDIF
+      IF (.NOT.ALLOCATED(PREV_I_POWER_P)) THEN
+        ALLOCATE(PREV_I_POWER_P(NUM_TRS),STAT=STATUS)
+        CALL TRS_STAT(STATUS,'PREV_I_POWER_P')
+      ENDIF
+
       TRS_TIME = 0.0
 
       DO TRS = 1,NUM_TRS
@@ -573,12 +610,12 @@
         WRITE(*,*) '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+'
         WRITE(*,*) '              File [',TRS_FNAME,'] Opened'
         WRITE(*,*) '+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+'
-      IF (FIRST) THEN
+      IF (TRS_FIRST) THEN
         READ(NF_TRS,*) LINE !Header line
         WRITE(*,*) LINE
         READ(NF_TRS,'(A100)') LINE
         ! YOU CANNOT HAVE A VARIABLE WHOSE NAME STARTS WITH 'END' in some form
-        DO WHILE(TO_UPPER((LINE(1:3)).NE.'END')
+        DO WHILE(TO_UPPER((LINE(1:3)).NE.'END'))
 !          WRITE(*,*) LINE
           CALL TRS_PARSE(LINE,KEYWORD,VARIABLE)
 
@@ -648,12 +685,12 @@
             ENDIF
               READ(VARIABLE,*) ISPUMPING(TRS)
 
-            CASE('ISPARALLELSLUICE') ! Logical (1 or 0, I think)
-            IF(.NOT.ALLOCATED(ISPARALLELSLUICE)) THEN
-              ALLOCATE(ISPARALLELSLUICE(NUM_TRS))
-              ISPARALLELSLUICE(:) = .FALSE.
-            ENDIF
-              READ(VARIABLE,*) ISPARALLELSLUICE(TRS)
+            ! CASE('ISPARALLELSLUICE') ! Logical (1 or 0, I think)
+            ! IF(.NOT.ALLOCATED(ISPARALLELSLUICE)) THEN
+            !   ALLOCATE(ISPARALLELSLUICE(NUM_TRS))
+            !   ISPARALLELSLUICE(:) = .FALSE.
+            ! ENDIF
+            !   READ(VARIABLE,*) ISPARALLELSLUICE(TRS)
 
             CASE('MODE')  ! Integer mode code
             IF(.NOT.ALLOCATED(MODE)) THEN
@@ -755,8 +792,8 @@
               IF ((INDEX(VARIABLE,'P').NE.0).OR.
      &             INDEX(VARIABLE,'p').NE.0) THEN
               IF (.NOT.ALLOCATED(POWER_G)) THEN
-                ALLOCATE(POWER_G(NUM_TRS,LEN_HILLS_G(TRS),
-     &            N_HILLS_G(TRS)),STAT=STATUS)
+                ALLOCATE(POWER_G(NUM_TRS,MAXVAL(LEN_HILLS_G),
+     &            MAXVAL(N_HILLS_G)),STAT=STATUS)
               ENDIF
                 CALL TRS_STAT(STATUS,'HILL CHART: Generator Powers')
                 !There may be a better way to do this to be honest...
@@ -769,8 +806,8 @@
               ELSEIF ((INDEX(VARIABLE,'F').NE.0).OR.
      &             INDEX(VARIABLE,'f').NE.0) THEN
                 IF (.NOT.ALLOCATED(FLOW_G)) THEN
-                  ALLOCATE(FLOW_G(NUM_TRS,LEN_HILLS_G(TRS),
-     &              N_HILLS_G(TRS)),STAT=STATUS)
+                  ALLOCATE(FLOW_G(NUM_TRS,MAXVAL(LEN_HILLS_G),
+     &              MAXVAL(N_HILLS_G)),STAT=STATUS)
                 ENDIF
                 CALL TRS_STAT(STATUS,'HILL CHART: Generator Flow')
                 CALL TRS_LOAD_HILLCHART(HEAD_G(TRS,:),
@@ -792,8 +829,8 @@
               IF ((INDEX(VARIABLE,'P').NE.0).OR.
      &             INDEX(VARIABLE,'p').NE.0) THEN
                 IF (.NOT.ALLOCATED(POWER_P)) THEN
-                  ALLOCATE(POWER_P(TRS,LEN_HILLS_P(TRS),
-     &              N_HILLS_P(TRS)),STAT=STATUS)
+                  ALLOCATE(POWER_P(TRS,MAXVAL(LEN_HILLS_P),
+     &              MAXVAL(N_HILLS_P)),STAT=STATUS)
                 ENDIF
                 CALL TRS_STAT(STATUS,'HILL CHART: Pump Powers')
                 CALL TRS_LOAD_HILLCHART(HEAD_P(TRS,:),
@@ -804,8 +841,8 @@
               ELSEIF ((INDEX(VARIABLE,'F').NE.0).OR.
      &             INDEX(VARIABLE,'f').NE.0) THEN
                 IF (.NOT.ALLOCATED(FLOW_P)) THEN
-                  ALLOCATE(FLOW_P(TRS,LEN_HILLS_P(TRS),
-     &              N_HILLS_P(TRS)),STAT=STATUS)
+                  ALLOCATE(FLOW_P(TRS,MAXVAL(LEN_HILLS_P),
+     &              MAXVAL(N_HILLS_P)),STAT=STATUS)
                 ENDIF
                 CALL TRS_STAT(STATUS,'HILL CHART: Pump Flow')
                 CALL TRS_LOAD_HILLCHART(HEAD_P(TRS,:),
@@ -868,7 +905,7 @@
         ENDIF
       ENDIF
       END DO
-      FIRST = .FALSE.
+      TRS_FIRST = .FALSE.
       END SUBROUTINE TRS_READ_DATAFILES
 !
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -987,11 +1024,26 @@
 ! AA      1: Auto angles, 2: User       1: Auto individual, 2: User, 3: Mean-Bank
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
+      ! It os possible that this sub needs to call all the variables used...
+      ! NH FORTRAN CHECK 01/07/2022 [NOT DONE YET]
       SUBROUTINE TRS_FLOWS()
-      INTEGER :: TRS,CULV
+      INTEGER :: TRS,CULV !iterators
       !Calculate the base flows, and then scale, ramp, and apply them.
-      REAL,DIMENSION(NUM_TRS),ALLOCATABLE :: Q_BASE_G,Q_BASE_P
-      REAL :: T_AREA,S_AREA,T_SF,PHASE_TIME
+      REAL,DIMENSION(:),ALLOCATABLE :: Q_BASE_G,Q_BASE_P
+      REAL :: T_AREA,S_AREA ! Turbine and sluice areas
+      REAL :: T_SF,PHASE_TIME ! Turbine scale factor (-), Phase time
+      REAL :: IS_PUMP, IS_TURB ! Remove flows if not a pump or turbine at point
+      REAL :: Q ! Flow before relaxation
+      ! REAL :: I_RAMP  ! The ramp of the current TRS
+
+      IF (.NOT.ALLOCATED(Q_BASE_G)) THEN
+        ALLOCATE(Q_BASE_G(NUM_TRS))
+      ENDIF
+
+      IF (.NOT.ALLOCATED(Q_BASE_P)) THEN
+        ALLOCATE(Q_BASE_P(NUM_TRS))
+      ENDIF
+
       ! Sluice flows calculated with orifice equation.
       DO TRS = 1,NUM_TRS
         QG_BASE(TRS) = TRS_CALC(
@@ -1003,130 +1055,503 @@
      &    HEAD_P(TRS,:),
      &    FLOW_P(TRS,PUMP_CHART(TRS),:))
       END DO
-      !This is the trickiest sub so far... probably need to have the double
-      !select case to do all the types of culvert and modes individually...
 
+!     This is the trickiest sub so far... probably need to have the double
+!     select case to do all the types of culvert and modes individually...
+
+!     Iterate through the culverts given
       DO CULV = 1,NBUSE
+        Q = 0.0
+!       TRS is stored in the CTRASH variable
         TRS = CTRASH(CULV)
+!       Load the phase time of the current TRS
         PHASE_TIME = TRS_TIME - PREV_SWITCH(TRS)
+!       CLP     Flow control type. Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
+!       CV5     Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
+        IF (CV5(CULV).EQ.1) THEN ! Turbine that pumps
+          IS_PUMP = 1.0
+          IS_TURB = 1.0
+        ELSEIF (CV5(CULV).EQ.2) THEN ! Turbine only, no pumping here
+          IS_PUMP = 0.0
+          IS_TURB = 1.0
+        ELSEIF (CV5(CULV).EQ.3) THEN ! Pump only
+          IS_PUMP = 1.0
+          IS_TURB = 0.0
+        ELSE ! Assume both...
+          IS_PUMP = 1.0
+          IS_TURB = 1.0
+        ENDIF
 
-        SELECT (CLPBUS(CULV))
+        SELECT CASE (CLPBUS(CULV))
           CASE(4) ! Control point
-            DBUS(CULV) = 0.0
+            Q = 0.0 ! therefore no flow
 
           CASE(5) ! Turbine
             T_AREA = 0.25*PI*LRG(CULV)*LRG(CULV)        ! Turbine area (m2)
             T_SF = (LRG(CULV)**2)/(ORIG_DIAM_T(TRS)**2) ! Turbine scale factor
             ! Ramp * Scale Factor * Flow
-            SELECT (MODE(TRS))
+            SELECT CASE (MODE(TRS))
               CASE (0)  ! Initial warmup
               !REAL FUNCTION TRS_ORIFICE(CD,AREA,HDIFF) RESULT(FLOW)
-                DBUS(CULV) = RAMP(TRS)*
+                Q = RAMP(TRS)*
      &            ORIFICE(CE1(CULV),T_AREA,HEADDIFF(TRS))
 
               CASE (1)  ! High water hold
                 ! Ramp down turbine flow if appropriate
-                IF (PHASE_TIME).LT.RAMPTIME(TRS)) THEN
+                IF ((PHASE_TIME).LT.RAMPTIME(TRS)) THEN
                   IF (ISPUMPING(TRS)) THEN
-                    DBUS(CULV) = (1.0 - RAMP(TRS))*QP_BASE*T_SF
+                    Q = (1.0 - RAMP(TRS))*QP_BASE(TRS)
+     &                *T_SF*CS2(CULV)*IS_PUMP
                   ELSE
-                    IF(ISPARALLELSLUICE(TRS)) THEN
-                      DBUS(CULV) = (1.0 - RAMP(TRS))*QG_BASE*T_SF
+                    IF(C56(CULV).EQ.1) THEN
+                      Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)
+     &                  *T_SF*CE2(CULV)*IS_TURB
                     ELSE
-                      DBUS(CULV) = 0.0
+                      Q = 0.0
                     ENDIF
                   ENDIF
                 ELSE
-                  DBUS(CULV) = 0.0
+                  Q = 0.0
                 ENDIF
 
               CASE (2)  ! Ebb generation
-                DBUS(CULV) = RAMP(TRS)*QG_BASE*T_SF
+                Q = RAMP(TRS)*QG_BASE(TRS)
+     &            *T_SF*CE1(CULV)*IS_TURB ! Normal flow
 
               CASE (3)  ! Ebb sluicing
-                IF (ISPARALLELSLUICE(TRS)) THEN
-                  DBUS(CULV) = RAMP(TRS)*QG_BASE*T_SF
+                IF (C56(CULV).EQ.1) THEN
+                  Q = RAMP(TRS)*QG_BASE(TRS)
+     &              *T_SF*CE1(CULV)*IS_TURB
                 ELSE
-                  DBUS(CULV) = 0.0
+                  ! ramp down into 0.0
+                  Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)
+     &              *T_SF*CE1(CULV)*IS_TURB
                 ENDIF
 
               CASE (-1) ! Ebb pumping
-                DBUS(CULV) = RAMP(TRS)*QP_BASE*T_SF
+                Q = RAMP(TRS)*QP_BASE(TRS)
+     &            *T_SF*CS1(CULV)*IS_PUMP
               CASE (4)  ! Low water hold
               ! Ramp down turbine flow if appropriate
-              IF (PHASE_TIME).LT.RAMPTIME(TRS)) THEN
+              IF ((PHASE_TIME).LT.RAMPTIME(TRS)) THEN
                 IF (ISPUMPING(TRS)) THEN
-                  DBUS(CULV) = (1.0 - RAMP(TRS))*QP_BASE*T_SF
+                  Q = (1.0 - RAMP(TRS))*QP_BASE(TRS)
+     &              *T_SF*CS1(CULV)*IS_PUMP
                 ELSE
-                  IF(ISPARALLELSLUICE(TRS)) THEN
-                    DBUS(CULV) = (1.0 - RAMP(TRS))*QG_BASE*T_SF
+                  IF(C56(CULV).EQ.1) THEN
+                    Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)
+     &                  *T_SF*CE1(CULV)*IS_TURB
                   ELSE
-                    DBUS(CULV) = 0.0
+                    Q = 0.0
                   ENDIF
                 ENDIF
               ELSE
-                DBUS(CULV) = 0.0
+                Q = 0.0
               ENDIF
 
               CASE (5)  ! Flood generation
-                DBUS(CULV) = RAMP(TRS)*QG_BASE*T_SF
+                Q = RAMP(TRS)*QG_BASE(TRS)
+     &              *T_SF*CE2(CULV)*IS_TURB
 
               CASE (6)  ! Flood sluicing
+                IF (C56(CULV).EQ.1) THEN
+                  Q = RAMP(TRS)*QG_BASE(TRS)
+     &              *T_SF*CE2(CULV)*IS_TURB
+                ELSE
+                  ! ramp down into 0.0
+                  Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)
+     &              *T_SF*CE2(CULV)*IS_TURB
+                ENDIF
 
               CASE (-2) ! Flood pumping
+                Q = RAMP(TRS)*QG_BASE(TRS)
+     &              *T_SF*CS2(CULV)*IS_PUMP
 
               CASE DEFAULT ! Error
+                WRITE(*,*) 'SOME KIND OF TRS MODE ERROR IN TURB FLOW CALC'
+
             END SELECT
+
           CASE(6) ! Sluice
-            S_AREA =
+          ! Determine sluice area based on shape
+            IF (CIRC(CULV).EQ.1) THEN
+              S_AREA = 0.25*PI*LRG(CULV)*LRG(CULV)        ! Sluice area (m2)
+            ELSEIF (CIRC(CULV).EQ.0) THEN
+!             ZF = ELEVATION OF BOTTOM
+!             Assume the area in the sluice flow is the Base * mean WL
+              S_AREA = LRG(CULV)*
+     &          (WL_IN(TRS) + WL_OUT(TRS)/2 -
+     &          (P_MIN(ZF) + P_MAX(ZF)))
+            ELSE
+              ! You can add more area calc options here if desired
+              WRITE(*,*) 'SLUICE AREA ERROR AT CULV:',CULV
+              S_AREA = 0.0
+            ENDIF
             ! Orifice equation correctly constructed.
-            SELECT (MODE(TRS))
-              CASE (0)  ! Initial warmup
-                DBUS(CULV) = RAMP(TRS)*
-     &            ORIFICE(CE1(CULV),AREA,HEADDIFF(TRS))
+            SELECT CASE (MODE(TRS))
+              CASE (0)  ! Initial warmup, slow ramp up to get motion etc.
+                Q = RAMP(TRS)*
+     &            ORIFICE(2.0,AREA,HEADDIFF(TRS))
 
               CASE (1)  ! High water hold
+                ! Ramp down as the sluices close
                 IF ((TRS_TIME(TRS)-PREV_SWITCH(TRS))
      &                            .LT.RAMPTIME(TRS)) THEN
                   IF (ISPUMPING(TRS)) THEN
-                    DBUS(CULV) = 0.0
+                    ! for simplicity no sluice flow when pumping
+                    Q = 0.0
                   ELSE
-                    DBUS(CULV) = (1.0 - RAMP(TRS))*
-     &                ORIFICE(CE1(CULV),S_AREA,HEADDIFF(TRS))*
+                    ! ramp down
+                    Q = (1.0 - RAMP(TRS))*
+     &                ORIFICE(CEBUS(2,CULV),S_AREA,HEADDIFF(TRS))
                   ENDIF
                 ELSE
-                  DBUS(CULV) = 0.0
+                  ! No flow, normal hold
+                  Q = 0.0
                 ENDIF
-              CASE (2)  ! Ebb generation
-              CASE (3)  ! Ebb sluicing
+
+              CASE (2)  ! Ebb generation, no sluice flow by default
+                Q = 0.0
+
+              CASE (3)  ! Ebb sluicing, ramp up into normal
+                Q = RAMP(TRS)*ORIFICE(CEBUS(1,CULV),S_AREA,HEADDIFF(TRS))
+
               CASE (-1) ! Ebb pumping
-              CASE (4)  ! Low water hold
-              CASE (5)  ! Flood generation
-              CASE (6)  ! Flood sluicing
-              CASE (-2) ! Flood pumping
-              CASE DEFAULT ! Error
+                Q = 0.0
+
+              CASE (4)  ! Low water hold, same as high water hold
+                IF ((TRS_TIME(TRS)-PREV_SWITCH(TRS))
+     &                            .LT.RAMPTIME(TRS)) THEN
+                  IF (ISPUMPING(TRS)) THEN
+                    Q = 0.0
+                  ELSE
+                    Q = (1.0 - RAMP(TRS))*
+     &                ORIFICE(CEBUS(1,CULV),S_AREA,HEADDIFF(TRS))*
+                  ENDIF
+                ELSE
+                  Q = 0.0
+                ENDIF
+
+              CASE (5)  ! Flood generation, no sluice flow by default
+                  Q = 0.0
+
+              CASE (6)  ! Flood sluicing, ramp up into normal
+                Q = RAMP(TRS)*
+     &              ORIFICE(CEBUS(2,CULV),S_AREA,HEADDIFF(TRS))
+
+              CASE (-2) ! Flood pumping, no flow.
+                Q = 0.0
+
+              CASE DEFAULT ! you added a new mode somewhere and did not add it here..?
+                WRITE(*,*) 'MODE ERROR', MODE(TRS),
+     &                     ' IN SLUICE FLOW CALC CULV [',CULV,']'
             END SELECT
+
           CASE DEFAULT
             IF ((CLPBUS(CULV).GT.6).OR.(CLPBUS(CULV).LE.0)) THEN
               ! Some kind of error
-              WRITE(*,*) 'INVALID CULVERT (CLP) VALUE USED'
+              WRITE(*,*) 'INVALID CULVERT (CLP) VALUE [',CLPBUS(CULV),']'
             ELSE
-              ! Culvert operates as usual
+              ! Culvert operates as usual, copy the normal buse functionality into here?
             ENDIF
         END SELECT
+        ! Apply the calculated flow to the culvert with relaxation
+        DBUS(CULV)= RELAXB*Q + (1.D0-RELAXB)*DBUS(CULV)
       END DO
       END SUBROUTINE TRS_FLOWS
+
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !     Initialise the arrays for the number of trs schemes when passed the
 !     number of schemes.
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
-C      SUBROUTINE TRS_INIT_NUM(NUMBER_OF_SCHEMES)
-C      INTEGER :: NUMBER_OF_SCHEMES
-C      NUM_TRS = NUMBER_OF_SCHEMES
-C
-C
-C      END SUBROUTINE TRS_INIT_NUM
+! !      SUBROUTINE TRS_INIT_NUM(NUMBER_OF_SCHEMES)
+! !      INTEGER :: NUMBER_OF_SCHEMES
+! !      NUM_TRS = NUMBER_OF_SCHEMES
+! !
+! !
+! !      END SUBROUTINE TRS_INIT_NUM
+!
+!
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!     Calculate the power generated or consumed at each culvert
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!
+      SUBROUTINE TRS_POWER()
+
+      INTEGER :: TRS,CULV
+      REAL :: IS_PUMP,IS_TURB
+      REAL,DIMENSION(:),ALLOCATABLE :: P_BASE_P, P_BASE_G
+
+      IF (.NOT.ALLOCATED(P_BASE_G)) THEN
+        ALLOCATE(P_BASE_G(NUM_TRS))
+      ENDIF
+      IF (.NOT.ALLOCATED(P_BASE_P)) THEN
+        ALLOCATE(P_BASE_P(NUM_TRS))
+      ENDIF
+
+      ! BASE POWERS
+      DO TRS = 1,NUM_TRS
+        ! Clear the variable
+        POWER(TRS) = 0.0
+        ! Base generator powers
+        P_BASE_G(TRS) = TRS_CALC(
+     &    HEADDIFF(TRS),
+     &    HEAD_G(TRS,:),
+     &    POWER_G(TRS,TURB_CHART(TRS),:))
+        ! Base Pumping powers
+        P_BASE_P(TRS) = TRS_CALC(
+     &    HEADDIFF(TRS),
+     &    HEAD_P(TRS,:),
+     &    POWER_P(TRS,PUMP_CHART(TRS),:))
+      END DO
+
+!     Iterate through the culverts given
+      DO CULV = 1,NBUSE
+!       TRS is stored in the CTRASH variable
+        TRS = CTRASH(CULV)
+!       Load the phase time of the current TRS
+        PHASE_TIME = TRS_TIME - PREV_SWITCH(TRS)
+!       CLP     Flow control type. Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
+!       CV5     Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
+        IF (CLPBUS(CULV).EQ.5) THEN
+        SELECT CASE (MODE(TRS))
+          CASE (0)  ! Warmup
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE (2)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE (3)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (1)  ! High water Hold
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                ! Ramp down from pumping power
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - (1 - RAMP(TRS))*
+     &               P_BASE_P(TRS)*CSBUS(2,CULV)
+                ELSE
+                  ! IF Parallel sluice -> so close to level that we call it 0
+                  POWER(TRS) = POWER(TRS) + 0.0
+                  ENDIF
+                ENDIF
+              CASE (2)
+                ! IF Parallel sluice -> so close to level that we call it 0
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE (3)
+              ! Ramp down from pumping power
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - (1 - RAMP(TRS))*
+     &               P_BASE_P(TRS)*CSBUS(2,CULV)
+                ENDIF
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (2)  ! Ebb Generation
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &            P_BASE_G(TRS)*CEBUS(1,CULV)
+              CASE (2)
+                POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &            P_BASE_G(TRS)*CEBUS(1,CULV)
+              CASE (3)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (3)  ! Ebb sluicing
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                IF(C56(CULV).EQ.1) THEN
+                  POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &              P_BASE_G(TRS)*CEBUS(1,CULV)
+                ENDIF
+              CASE (2)
+                IF(C56(CULV).EQ.1) THEN
+                  POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &              P_BASE_G(TRS)*CEBUS(1,CULV)
+                ENDIF
+              CASE (3)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (-1) ! Ebb pumping
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - RAMP(TRS)*
+     &               P_BASE_P(TRS)*CSBUS(1,CULV)
+                ENDIF
+              CASE (2)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE (3)
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - RAMP(TRS)*
+     &               P_BASE_P(TRS)*CSBUS(1,CULV)
+                ENDIF
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (4) ! Low water hold
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                ! Ramp down from pumping power
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - (1 - RAMP(TRS))*
+     &               P_BASE_P(TRS)*CSBUS(1,CULV)
+                ELSE
+                  ! IF Parallel sluice -> so close to level that we call it 0
+                  POWER(TRS) = POWER(TRS) + 0.0
+                  ENDIF
+                ENDIF
+              CASE (2)
+                ! IF Parallel sluice -> so close to level that we call it 0
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE (3)
+              ! Ramp down from pumping power
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - (1 - RAMP(TRS))*
+     &               P_BASE_P(TRS)*CSBUS(1,CULV)
+                ENDIF
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (5)  ! Flood Generation
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &            P_BASE_G(TRS)*CEBUS(2,CULV)
+              CASE (2)
+                POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &            P_BASE_G(TRS)*CEBUS(2,CULV)
+              CASE (3)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (6)  ! Flood sluicing
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                IF(C56(CULV).EQ.1) THEN
+                  POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &              P_BASE_G(TRS)*CEBUS(2,CULV)
+                ENDIF
+              CASE (2)
+                IF(C56(CULV).EQ.1) THEN
+                  POWER(TRS) = POWER(TRS) + RAMP(TRS)*
+     &              P_BASE_G(TRS)*CEBUS(2,CULV)
+                ENDIF
+              CASE (3)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE (-2) ! Flood pumping
+            SELECT CASE (CV5(CULV))
+              CASE (1)
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - RAMP(TRS)*
+     &               P_BASE_P(TRS)*CSBUS(2,CULV)
+                ENDIF
+              CASE (2)
+                POWER(TRS) = POWER(TRS) + 0.0
+              CASE (3)
+                IF (ISPUMPING(TRS)) THEN
+                  POWER(TRS) = POWER(TRS) - RAMP(TRS)*
+     &               P_BASE_P(TRS)*CSBUS(2,CULV)
+                ENDIF
+              CASE DEFAULT
+              WRITE(*,*) 'INVALID CV5 PUSHED TO POWER CALC CULV [',CULV,']'
+            END SELECT
+
+          CASE DEFAULT
+            WRITE(*,*) 'INVALID MODE [',MODE(TRS),'] IN POWER CALC.'
+        END SELECT
+      ENDIF
+      ENDDO
+
+      END SUBROUTINE TRS_POWER
+
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!     Go through the schemes and use the weighted control points to
+!     calculate an up and downstream level for the scheme
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!
+      SUBROUTINE TRS_W_LEVELS()
+      INTEGER :: CULV, TRS
+      REAL :: TMP_IN, TMP_OUT, TMP_W_IN, TMP_W_OUT
+      REAL :: SUM_IN,SUM_OUT,SUM_W
+
+      ! FOR EVERY SCHEME
+      DO TRS  = 1,NUM_TRS
+        WL_IN(TRS) = 0.0
+        WL_OUT(TRS) = 0.0
+        SUM_W = 0.0
+        ! FOR EVERY CULVERT
+        DO CULV = 1,NBUSE
+          ! IF THIS CULVERT IS FOR THIS SCHEME
+          IF (CTRASH(CULV).EQ.TRS) THEN
+            TMP_IN = H(ENTBUS(CULV))+ZF(ENTBUS(CULV))
+            TMP_OUT = H(SECBUS(CULV))+ZF(SECBUS(CULV))
+            ! IF IN PARALLEL USE THE P_MIN/P_MAX METHOD
+            IF (NCSIZE.GT.1) THEN
+              TMP_IN = P_MIN(TMP_IN) + P_MAX(TMP_IN)
+              TMP_IN = P_MIN(TMP_OUT) + P_MAX(TMP_OUT)
+            ENDIF
+            ! CUMULATIVE TOTALS
+            SUM_IN = SUM_IN + TMP_IN*CV(CULV)
+            SUM_OUT = SUM_OUT + TMP_OUT*CV(CULV)
+            SUM_W = SUM_W + CV(CULV)
+          ENDIF
+        ENDDO
+        ! WEIGHTED AVERAGE
+        WL_IN(TRS) = SUM_IN/SUM_W
+        WL_OUT(TRS) = SUM_OUT/SUM_W
+        HEADDIFF(TRS) = WL_IN(TRS) - WL_OUT(TRS)
+      ENDDO
+      END SUBROUTINE TRS_W_LEVELS
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!     COLLATE THE FLOW RATES THROUGH THE TRS
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!
+      SUBROUTINE TRS_COLLATE_Q()
+      INTEGER :: CULV, TRS
+
+      DO TRS = 1,NUM_TRS
+        Q_TURB(TRS) = 0.0
+        Q_SLUICE(TRS) = 0.0
+        DO CULV= 1,NBUSE
+          IF (CTRASH(CULV).EQ.TRS) THEN
+            SELECT CASE (CLPBUS(CULV))
+              CASE (5) ! TURBINE or PUMP
+                Q_TURB(TRS) = Q_TURB(TRS) + DBUS(CULV)
+              CASE (6) ! SLUICE
+                Q_SLUICE(TRS) = Q_SLUICE(TRS) + DBUS(CULV)
+              CASE DEFAULT ! NORMAL or CONTROL
+            END SELECT
+          ENDIF
+        ENDDO
+      ENDDO
+      END SUBROUTINE TRS_COLLATE_Q
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!     do something..
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!
+      SUBROUTINE
 
 
       END MODULE TRS_T2D
@@ -1137,9 +1562,9 @@ C      END SUBROUTINE TRS_INIT_NUM
       USE TRS_T2D
       INTEGER :: NFO1
 
-C      print *, 'linear interpolate 5,0,10,5,7 = ',
-C     &TRS_INTERP(5.0,0.0,10.0,5.0,7.0)
-C
+!      print *, 'linear interpolate 5,0,10,5,7 = ',
+!     &TRS_INTERP(5.0,0.0,10.0,5.0,7.0)
+!
       WRITE(*,*) 'Program started...'
       NFO1 = 101
 
@@ -1147,9 +1572,10 @@ C
       CALL TRS_FLEX_VALUES(30.0)
       CALL TRS_NEW_MODE(31.0)
 
-      DO I=1,NUM_TRS
+      DO I=1,NUM_TRS ! This absolute madlad used an implicit (or did it just pull from TRS..?)
         WRITE(*,*) 'TRS[',I,'] - Mode = ',MODE(I)
       ENDDO
+
       CALL TRS_WRITE_RESULTS(102)
       TRS_TIME = TRS_TIME + 1
       CALL TRS_WRITE_RESULTS(102)

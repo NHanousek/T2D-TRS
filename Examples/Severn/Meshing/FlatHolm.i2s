@@ -1,0 +1,28 @@
+############################################################################
+:FileType i2s  ASCII  EnSim 1.0
+# File structure National Research Council Canada © 1998-2017
+############################################################################
+# DataType    2D Line Set
+#
+:Application  BlueKenue
+:Version      3.9.5
+:WrittenBy    Nicolas Hanousek  # potential owner of the data
+:CreationTime 2022/07/01 15:46:45.000
+#---------------------------------------------------------------------------
+#
+:DoublePrecision   False
+#
+:Projection UTM
+:Zone 30
+:Ellipsoid WGS84
+#
+:AttributeCount 1
+:AttributeUnits 1 m
+:EndHeader
+6 0
+491360.020868 5691602.686641
+491257.334842 5691842.287369
+491508.345128 5692195.983681
+491804.993648 5692195.983681
+491862.041441 5691579.867524
+491360.020868 5691602.686641

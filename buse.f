@@ -107,6 +107,7 @@
       USE INTERFACE_PARALLEL, ONLY : P_MAX,P_MIN
       ! TO HAVE ACCESS TO LOGICAL UNITS OF FILES !culverts, TRS, Output
       USE DECLARATIONS_TELEMAC2D, ONLY: T2D_FILES,T2DFO1,T2DFO2,T2DRFO
+      USE TRS_T2D
       IMPLICIT NONE
 !
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -163,6 +164,8 @@
 !
 ! LOOP OVER THE CULVERTS
 !
+! DEFAULT OPERATION
+      IF (MAXVAL(CLPBUS).LE.3) THEN
       DO N=1,NBUSE
 !
 !       IDENTIFIES ENTRY / EXIT NODES
@@ -669,6 +672,30 @@
       ENDDO ! N
 !
 !-----------------------------------------------------------------------
-!
+!     END OF NORMAL OPERATION, MODEL HAS TRS
+      ELSE
+
+!       N. Hanousek 05/07/2022
+        IF (TRS_FIRST) THEN
+          NUM_TRS =
+          ! And other bits 
+          CALL TRS_READ_DATAFILES()
+        ENDIF
+
+        CALL TRS_W_LEVELS()
+        CALL TRS_FLOWS()
+
+        IF (ITS TIME TO PRINT THE DATA) THEN
+          CALL TRS_POWER()
+          CALL TRS_COLLATE_Q()
+          IF (TIME TO WRITE TO CONSOLE) THEN
+            CALL TRS_WRITE_RESULTS()
+          ENDIF
+          IF (TIME TO WRITE TO FILE) THEN
+            CALL TRS_WRITE_STATUS()
+          ENDIF
+        ENDIF
+      ENDIF
+
       RETURN
       END
