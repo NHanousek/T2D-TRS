@@ -22,7 +22,7 @@ I1  I2  CE1 CE2 CS1 CS2 LRG  HAUT1 CLP LBUS Z1  Z2  CV C56 CV5 C5 CT HAUT2 FRIC 
 ! C56     Constant to determ flow type  Parrallel sluicing for turbine: 0 = FALSE, 1 = TRUE
 ! CV5     Correction for type 5 flow    Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
 ! C5      Correction for type 5 flow    unused
-! CT      Loss coeff for trash screen   Tidal Range Scheme Number
+! CT      Loss coeff for trash screen   Tidal Range Scheme Number  (Yes it's technically a real but oh well)
 ! HAUT2   Height of construction p2     Minimum height for safe operation at p2
 ! FRIC    Manning Strickler coeff       Friction of the sluice gate sides?
 ! LENGTH  Length of the culvert         Length of sluice gate
