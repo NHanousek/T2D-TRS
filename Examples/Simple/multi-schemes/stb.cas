@@ -1,0 +1,22 @@
+
+    /
+    / CONVERSION OF MESH FILE USING STBTEL
+    /
+    CONVERTER = YES
+    DEBUG = NO
+    /
+    / INPUT FILE INFORMATION
+    /
+    INPUT FILE FORMAT : 'SERAFIN'
+    INPUT FILE : 'r2d_Simple-Two.slf'
+    BOUNDARY CONDITION IN SERAFIN FORMAT : NO
+    
+    /
+    / OUTPUT FILE INFORMATION
+    /
+    OUTPUT FILE FORMAT : 'VTK'
+    OUTPUT FILE : 'multi_results.vtk'
+    /
+    / 
+    /
+    

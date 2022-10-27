@@ -1,0 +1,22 @@
+############################################################################
+:FileType i2s  ASCII  EnSim 1.0
+# File structure National Research Council Canada © 1998-2017
+############################################################################
+# DataType    2D Line Set
+#
+:Application  BlueKenue
+:Version      3.9.5
+:WrittenBy    Nicolas Hanousek  # potential owner of the data
+:CreationTime 2022/08/30 12:26:16.000
+#---------------------------------------------------------------------------
+:Name  midline
+#
+:AttributeCount 1
+:AttributeUnits 1 m
+:EndHeader
+5 0
+594.293931 2404.136998
+603.655746 2403.616898
+605.216049 2005.219652
+595.334133 2006.259854
+594.293931 2404.136998

@@ -1,0 +1,27 @@
+############################################################################
+:FileType t3m  ASCII  EnSim 1.0
+# File structure National Research Council Canada © 1998-2017
+############################################################################
+# DataType    T3 Mesh Generator
+#
+:Application  BlueKenue
+:Version      3.9.5
+:WrittenBy    Nicolas Hanousek  # potential owner of the data
+:CreationTime 2022/09/09 10:55:52.000
+#---------------------------------------------------------------------------
+#
+:DoublePrecision   False
+#
+:ResampleOutline      True
+#
+:CheckGrowThreshold   True
+:GrowThreshold        1.200000
+#
+:AutoSmoothMesh       True
+:AutoSmoothLoopCount  100
+#
+:OverwriteMesh       True
+#
+:DefaultEdgeLength       1.000000
+#
+:EndHeader

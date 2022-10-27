@@ -6,8 +6,8 @@ I1  I2  CE1 CE2 CS1 CS2 LRG  HAUT1 CLP LBUS Z1  Z2  CV C56 CV5 C5 CT HAUT2 FRIC 
 301 302 0.0 0.0 0.0 0.0  0.0  0.0  0   0    0   0   0  0   0   0  0   0    0     0      0    0  0  0  0  1
 
 ! Key     Old use
-! I1      First culvert point           Upstream point
-! I2      Second culvert point          Downstream point
+! I1      First culvert point           Upstream point (INSIDE)
+! I2      Second culvert point          Downstream point (OUTSIDE)
 ! CE1     Head loss coeff as inlet p1   Ebb head loss coeff generate/sluice
 ! CE2     Head loss coedd as inlet p2   Flood head loss coeff generate/sluice
 ! CS1     Head loss coeff outlet p1     Ebb head loss coeff pumping
@@ -22,16 +22,14 @@ I1  I2  CE1 CE2 CS1 CS2 LRG  HAUT1 CLP LBUS Z1  Z2  CV C56 CV5 C5 CT HAUT2 FRIC 
 ! C56     Constant to determ flow type  Parrallel sluicing for turbine: 0 = FALSE, 1 = TRUE
 ! CV5     Correction for type 5 flow    Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
 ! C5      Correction for type 5 flow    unused
-! CT      Loss coeff for trash screen   Tidal Range Scheme Number  (Yes it's technically a real but oh well)
+! CT      Loss coeff for trash screen   Tidal Range Scheme Number  (Yes it's technically a real)
 ! HAUT2   Height of construction p2     Minimum height for safe operation at p2
 ! FRIC    Manning Strickler coeff       Friction of the sluice gate sides?
 ! LENGTH  Length of the culvert         Length of sluice gate
 ! CIRC    Shape: 1=circle, 0=Rect       Circular or rectangular sluice gate
-! D1      Angle of pipe-bottom p1       SAME/Unused
-! D2      Angle of pipe-bottom p2       SAME/Unused
-! A1      Angle of pipe-x_axis p1       SAME/Unused
-! A2      Angle of pipe-x_axis p2       SAME/Unused
+! D1      Angle of pipe-bottom p1       SAME
+! D2      Angle of pipe-bottom p2       SAME
+! A1      Angle of pipe-x_axis p1       SAME
+! A2      Angle of pipe-x_axis p2       SAME
 ! AA      1: Auto angles, 2: User       1: Auto individual, 2: User, 3: Mean-type
 
-! Values to add
-! Which tidal range scheme it is...

@@ -1,0 +1,1198 @@
+############# WARNING: THIS FILE IS NOT INTENDED TO BE EDITED ##############
+:FileType ews  ASCII  EnSim 1.0
+# File structure National Research Council Canada © 1998-2017
+############# WARNING: THIS FILE IS NOT INTENDED TO BE EDITED ##############
+# DataType    EnSim Workspace
+#
+:Application  BlueKenue
+:Version      3.9.5
+:WrittenBy    Nicolas Hanousek  # potential owner of the data
+:CreationTime 2022/08/31 11:56:24.000
+#---------------------------------------------------------------------------
+:CurrentWorkingDirectory C:\Program Files\NRC-OCRE\BlueKenue64 - 3.9.5
+:IsMaximized 1
+:CustomColours 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff 0xffffff
+#
+:ViewType CEnSim2DView
+:Title 2D View (1)
+:SubTitle 
+:ViewLocked 0
+:PersistantPopups 0
+:ExtendedPopupInfo 0
+:ShowProbeLocations 1
+:DateTimeFormat 0
+:DefaultLabelHeight 8
+:AnimateBarActive 0
+:AnimateBarLabelStyle 0
+:AnimateFrameRate 20
+:AnimationStep 1
+:ShowGrid 1
+:ShowGridLabels 1
+:GridDivisionsHint 5
+:GridColour 0xc0c0c0
+:GridFontName Arial
+:GridFontSize 3
+:BackgroundColour 0xffffff
+:ViewSize 248 69 974 895
+:StreamLineMaxPoints 60
+:StreamLineTimeStep 180.000000
+:CurrentViewPosition -912.86 2148.06 429.996 3242.65
+:EndViewType CEnSim2DView
+#
+:ViewType CEnSim2DView
+:Title 2D View (4)
+:SubTitle 
+:ViewLocked 0
+:PersistantPopups 0
+:ExtendedPopupInfo 0
+:ShowProbeLocations 1
+:DateTimeFormat 0
+:DefaultLabelHeight 8
+:AnimateBarActive 0
+:AnimateBarLabelStyle 0
+:AnimateFrameRate 20
+:AnimationStep 1
+:ShowGrid 0
+:ShowGridLabels 1
+:GridDivisionsHint 5
+:GridColour 0xc0c0c0
+:GridFontName Arial
+:GridFontSize 3
+:BackgroundColour 0xffffff
+:ViewSize 357 173 1358 717
+:ObjectType CCompassRose
+:BearingOn 1
+:Origin 5.000000 70.000000
+:Extent 20.000000 20.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 0
+:BackgroundColour 0xffffff
+:BorderOn 0
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 0
+:IsVisible 0
+:EndObjectType CCompassRose
+:StreamLineMaxPoints 60
+:StreamLineTimeStep 180.000000
+:CurrentViewPosition 877.751 1328.11 -100.529 137.255
+:EndViewType CEnSim2DView
+#
+:ObjectType CLine2DSet
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\midline.i2s
+:ClipContours 1
+:IsMonochrome 1
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title midline
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 1.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 0.100000
+:ScaleLevel 2 0.200000
+:ScaleLevel 3 0.300000
+:ScaleLevel 4 0.400000
+:ScaleLevel 5 0.500000
+:ScaleLevel 6 0.600000
+:ScaleLevel 7 0.700000
+:ScaleLevel 8 0.800000
+:ScaleLevel 9 0.900000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CLine2DSet
+#
+:ObjectType CT3MeshGenerator
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\Split Lagoon.t3m
+:ChildObject 0 :ObjectType CT3MeshOutline
+:ObjectType CLine3DSet
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title Outline
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 1.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 0.100000
+:ScaleLevel 2 0.200000
+:ScaleLevel 3 0.300000
+:ScaleLevel 4 0.400000
+:ScaleLevel 5 0.500000
+:ScaleLevel 6 0.600000
+:ScaleLevel 7 0.700000
+:ScaleLevel 8 0.800000
+:ScaleLevel 9 0.900000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CLine3DSet
+:EndObjectType CT3MeshOutline
+:ChildObject 1 :ObjectType CT3MeshDensity
+:EndObjectType CT3MeshDensity
+:ChildObject 2 :ObjectType CT3MeshHardPoints
+:EndObjectType CT3MeshHardPoints
+:ChildObject 3 :ObjectType CT3MeshHardLines
+:EndObjectType CT3MeshHardLines
+:ChildObject 4 :ObjectType CT3MeshSoftLines
+:EndObjectType CT3MeshSoftLines
+:ChildObject 5 :ObjectType CT3MeshSubMeshes
+:ChildObject 0 :ObjectType CT32DScalar
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title Copy of LHS
+:SubTitle NodeType
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 8
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 7.000000
+:ScaleInterval 0.000000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 1.000000
+:ScaleLevel 2 2.000000
+:ScaleLevel 3 3.000000
+:ScaleLevel 4 4.000000
+:ScaleLevel 5 5.000000
+:ScaleLevel 6 6.000000
+:ScaleLevel 7 7.000000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff9100
+:ScaleColour 2 0xdaff00
+:ScaleColour 3 0x48ff00
+:ScaleColour 4 0x00ff48
+:ScaleColour 5 0x00ffda
+:ScaleColour 6 0x0091ff
+:ScaleColour 7 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CT32DScalar
+:ChildObject 1 :ObjectType CT32DScalar
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title Copy of RHS
+:SubTitle NodeType
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 8
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 7.000000
+:ScaleInterval 0.000000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 1.000000
+:ScaleLevel 2 2.000000
+:ScaleLevel 3 3.000000
+:ScaleLevel 4 4.000000
+:ScaleLevel 5 5.000000
+:ScaleLevel 6 6.000000
+:ScaleLevel 7 7.000000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff9100
+:ScaleColour 2 0xdaff00
+:ScaleColour 3 0x48ff00
+:ScaleColour 4 0x00ff48
+:ScaleColour 5 0x00ffda
+:ScaleColour 6 0x0091ff
+:ScaleColour 7 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CT32DScalar
+:EndObjectType CT3MeshSubMeshes
+:ChildObject 6 :ObjectType CT32DScalar
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\New Mesh.t3s
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title New Mesh
+:SubTitle NodeType
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 8
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 7.000000
+:ScaleInterval 0.000000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 1.000000
+:ScaleLevel 2 2.000000
+:ScaleLevel 3 3.000000
+:ScaleLevel 4 4.000000
+:ScaleLevel 5 5.000000
+:ScaleLevel 6 6.000000
+:ScaleLevel 7 7.000000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff9100
+:ScaleColour 2 0xdaff00
+:ScaleColour 3 0x48ff00
+:ScaleColour 4 0x00ff48
+:ScaleColour 5 0x00ffda
+:ScaleColour 6 0x0091ff
+:ScaleColour 7 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:StartAttribute 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title New Mesh
+:SubTitle NodeType
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 8
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 7.000000
+:ScaleInterval 0.000000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 1.000000
+:ScaleLevel 2 2.000000
+:ScaleLevel 3 3.000000
+:ScaleLevel 4 4.000000
+:ScaleLevel 5 5.000000
+:ScaleLevel 6 6.000000
+:ScaleLevel 7 7.000000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff9100
+:ScaleColour 2 0xdaff00
+:ScaleColour 3 0x48ff00
+:ScaleColour 4 0x00ff48
+:ScaleColour 5 0x00ffda
+:ScaleColour 6 0x0091ff
+:ScaleColour 7 0x0000ff
+:EndObjectType CColourScale
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:EndAttribute 0
+:StartAttribute 1
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title New Mesh
+:SubTitle Density
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 1.000000
+:ScaleMax 50.000000
+:ScaleInterval 4.900000
+:ScaleLevel 0 1.000000
+:ScaleLevel 1 5.900000
+:ScaleLevel 2 10.800000
+:ScaleLevel 3 15.700000
+:ScaleLevel 4 20.600000
+:ScaleLevel 5 25.500000
+:ScaleLevel 6 30.400000
+:ScaleLevel 7 35.300000
+:ScaleLevel 8 40.200000
+:ScaleLevel 9 45.100000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:EndAttribute 1
+:CurrentAttributeID 0
+:EndObjectType CT32DScalar
+:EndObjectType CT3MeshGenerator
+#
+:ObjectType CT3MeshGenerator
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\LHS-Mesh.t3m
+:ChildObject 0 :ObjectType CT3MeshOutline
+:ObjectType CLine3DSet
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title Outline
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 1.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 0.100000
+:ScaleLevel 2 0.200000
+:ScaleLevel 3 0.300000
+:ScaleLevel 4 0.400000
+:ScaleLevel 5 0.500000
+:ScaleLevel 6 0.600000
+:ScaleLevel 7 0.700000
+:ScaleLevel 8 0.800000
+:ScaleLevel 9 0.900000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CLine3DSet
+:EndObjectType CT3MeshOutline
+:ChildObject 1 :ObjectType CT3MeshDensity
+:EndObjectType CT3MeshDensity
+:ChildObject 2 :ObjectType CT3MeshHardPoints
+:EndObjectType CT3MeshHardPoints
+:ChildObject 3 :ObjectType CT3MeshHardLines
+:EndObjectType CT3MeshHardLines
+:ChildObject 4 :ObjectType CT3MeshSoftLines
+:EndObjectType CT3MeshSoftLines
+:ChildObject 5 :ObjectType CT3MeshSubMeshes
+:EndObjectType CT3MeshSubMeshes
+:EndObjectType CT3MeshGenerator
+#
+:ObjectType CT3MeshGenerator
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\RHS Mesh.t3m
+:ChildObject 0 :ObjectType CT3MeshOutline
+:ObjectType CLine3DSet
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title Outline
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 1.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 0.100000
+:ScaleLevel 2 0.200000
+:ScaleLevel 3 0.300000
+:ScaleLevel 4 0.400000
+:ScaleLevel 5 0.500000
+:ScaleLevel 6 0.600000
+:ScaleLevel 7 0.700000
+:ScaleLevel 8 0.800000
+:ScaleLevel 9 0.900000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CLine3DSet
+:EndObjectType CT3MeshOutline
+:ChildObject 1 :ObjectType CT3MeshDensity
+:EndObjectType CT3MeshDensity
+:ChildObject 2 :ObjectType CT3MeshHardPoints
+:EndObjectType CT3MeshHardPoints
+:ChildObject 3 :ObjectType CT3MeshHardLines
+:EndObjectType CT3MeshHardLines
+:ChildObject 4 :ObjectType CT3MeshSoftLines
+:EndObjectType CT3MeshSoftLines
+:ChildObject 5 :ObjectType CT3MeshSubMeshes
+:EndObjectType CT3MeshSubMeshes
+:ChildObject 6 :ObjectType CT32DScalar
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\RHS.t3s
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title RHS
+:SubTitle NodeType
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 8
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 7.000000
+:ScaleInterval 0.000000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 1.000000
+:ScaleLevel 2 2.000000
+:ScaleLevel 3 3.000000
+:ScaleLevel 4 4.000000
+:ScaleLevel 5 5.000000
+:ScaleLevel 6 6.000000
+:ScaleLevel 7 7.000000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff9100
+:ScaleColour 2 0xdaff00
+:ScaleColour 3 0x48ff00
+:ScaleColour 4 0x00ff48
+:ScaleColour 5 0x00ffda
+:ScaleColour 6 0x0091ff
+:ScaleColour 7 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:StartAttribute 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title RHS
+:SubTitle NodeType
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 8
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 7.000000
+:ScaleInterval 0.000000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 1.000000
+:ScaleLevel 2 2.000000
+:ScaleLevel 3 3.000000
+:ScaleLevel 4 4.000000
+:ScaleLevel 5 5.000000
+:ScaleLevel 6 6.000000
+:ScaleLevel 7 7.000000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff9100
+:ScaleColour 2 0xdaff00
+:ScaleColour 3 0x48ff00
+:ScaleColour 4 0x00ff48
+:ScaleColour 5 0x00ffda
+:ScaleColour 6 0x0091ff
+:ScaleColour 7 0x0000ff
+:EndObjectType CColourScale
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:EndAttribute 0
+:StartAttribute 1
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title New Mesh
+:SubTitle Density
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 8.750000
+:ScaleMax 17.350000
+:ScaleInterval 0.860000
+:ScaleLevel 0 8.750000
+:ScaleLevel 1 9.610000
+:ScaleLevel 2 10.470000
+:ScaleLevel 3 11.330000
+:ScaleLevel 4 12.190000
+:ScaleLevel 5 13.050000
+:ScaleLevel 6 13.910000
+:ScaleLevel 7 14.770000
+:ScaleLevel 8 15.630000
+:ScaleLevel 9 16.490000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:EndAttribute 1
+:CurrentAttributeID 0
+:EndObjectType CT32DScalar
+:EndObjectType CT3MeshGenerator
+#
+:ObjectType CSelafinFile
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\SLF-Simple-Two.slf
+:ChildObject 0 :ObjectType CLine2DSet
+:ClipContours 1
+:IsMonochrome 1
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title ipobo
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 1.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 0.100000
+:ScaleLevel 2 0.200000
+:ScaleLevel 3 0.300000
+:ScaleLevel 4 0.400000
+:ScaleLevel 5 0.500000
+:ScaleLevel 6 0.600000
+:ScaleLevel 7 0.700000
+:ScaleLevel 8 0.800000
+:ScaleLevel 9 0.900000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CLine2DSet
+:ChildObject 1 :ObjectType CT32DScalar
+:ClipContours 1
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 3.000000
+:IsVisible 0
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title BOTTOM
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin -10.000000
+:ScaleMax -9.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 -10.000000
+:ScaleLevel 1 -9.900000
+:ScaleLevel 2 -9.800000
+:ScaleLevel 3 -9.700000
+:ScaleLevel 4 -9.600000
+:ScaleLevel 5 -9.500000
+:ScaleLevel 6 -9.400000
+:ScaleLevel 7 -9.300000
+:ScaleLevel 8 -9.200000
+:ScaleLevel 9 -9.100000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CT32DScalar
+:EndObjectType CSelafinFile
+#
+:ObjectType CConlimGenerator
+:ObjectType CT32DScalar
+:FullFileName D:\Telemac\T2D-TRS\Examples\Simple\multi-schemes\BOTTOM_BC.bc2
+:ChildObject 0 :ObjectType CTableObject
+:ClipContours 0
+:IsMonochrome 0
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 000000
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 4.000000
+:IsVisible 0
+:IsAnimated 0
+:EndObjectType CTableObject
+:ClipContours 1
+:IsMonochrome 1
+:IsTransparent 0
+:ShowNodeLabels 0
+:ShowElementLabels 0
+:FontName Arial
+:FontSize 9
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BaseColour 0xc0c0c0
+:DrawingStyle 0
+:LineStyle 0
+:LineWidth 1.000000
+:PointStyle 0
+:PointSize 3.000000
+:IsVisible 1
+:IsAnimated 0
+:StartColourScale
+:Origin 80.000000 55.000000
+:Extent 15.000000 40.000000
+:FontName Arial
+:FontColour 000000
+:IsFontBold 0
+:IsFontItalics 0
+:IsFontUnderline 0
+:BackgroundOn 1
+:BackgroundColour 0xffffff
+:BorderOn 1
+:BorderWidth 2
+:BorderColour 000000
+:IsAspectRatioLocked 1
+:IsVisible 0
+:Title BOTTOM_BC
+:SubTitle 
+:AboveString Above
+:BelowString Below
+:LabelFormat 0
+:SignificantDigits 3
+:IsRangeLabelsOn 0
+:RangeLabelSeparator to
+:LevelsAreIndex 0
+:ScaleLevelCount 10
+:ScaleLevelBasis 0
+:ScaleMin 0.000000
+:ScaleMax 1.000000
+:ScaleInterval 0.100000
+:ScaleLevel 0 0.000000
+:ScaleLevel 1 0.100000
+:ScaleLevel 2 0.200000
+:ScaleLevel 3 0.300000
+:ScaleLevel 4 0.400000
+:ScaleLevel 5 0.500000
+:ScaleLevel 6 0.600000
+:ScaleLevel 7 0.700000
+:ScaleLevel 8 0.800000
+:ScaleLevel 9 0.900000
+:ScaleColourBasis 1
+:ScaleColour 0 0xff0000
+:ScaleColour 1 0xff7100
+:ScaleColour 2 0xffe200
+:ScaleColour 3 0xaaff00
+:ScaleColour 4 0x38ff00
+:ScaleColour 5 0x00ff38
+:ScaleColour 6 0x00ffaa
+:ScaleColour 7 0x00e2ff
+:ScaleColour 8 0x0071ff
+:ScaleColour 9 0x0000ff
+:EndObjectType CColourScale
+:ScaleZ 1.000000
+:ShiftZ 0.000000
+:CurrentFrame 1
+:EndObjectType CT32DScalar
+:EndObjectType CConlimGenerator
+:ObjectView 25 0
+:ObjectView 8 0
+:ObjectView 29 1

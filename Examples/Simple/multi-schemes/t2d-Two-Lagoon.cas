@@ -1,0 +1,116 @@
+/---------------------------------------------------------------------
+/ TELEMAC2D Version v8p3 AUG 2022
+/ Lagoon with culvert
+/---------------------------------------------------------------------
+
+
+
+/---------------------------------------------------------------------
+/ BOUNDARY CONDITIONS
+/---------------------------------------------------------------------
+
+STAGE-DISCHARGE CURVES =0
+OPTION FOR CULVERTS =1
+VERTICAL STRUCTURES = NO
+MASS-LUMPING ON H =1
+NUMBER OF CULVERTS   =24
+
+/---------------------------------------------------------------------
+/ EQUATIONS
+/---------------------------------------------------------------------
+
+AIR PRESSURE                         =true
+LAW OF BOTTOM FRICTION               =4
+ROUGHNESS COEFFICIENT OF BOUNDARIES  =0.025
+FRICTION COEFFICIENT                 =0.025
+BOTTOM SMOOTHINGS                    =1
+TURBULENCE MODEL                     =3
+
+/---------------------------------------------------------------------
+/ EQUATIONS, BOUNDARY CONDITIONS
+/---------------------------------------------------------------------
+
+OPTION FOR LIQUID BOUNDARIES =1
+
+/---------------------------------------------------------------------
+/ EQUATIONS, INITIAL CONDITIONS
+/---------------------------------------------------------------------
+
+INITIAL CONDITIONS ='CONSTANT ELEVATION'
+INITIAL ELEVATION  =-2.09
+
+
+/---------------------------------------------------------------------
+/ INPUT-OUTPUT, FILES
+/---------------------------------------------------------------------
+
+/FORMATTED DATA FILE 1     ='TurbineHillchart.txt'
+/FORMATTED RESULTS FILE    ='record.txt'
+
+CULVERTS DATA FILE        ='culvertdata-two.txt'
+GEOMETRY FILE             ='SLF-Simple-Two.slf'
+RESULTS FILE              ='r2d_Simple-Two.slf'
+LIQUID BOUNDARIES FILE    ='LIQ-Simple-Two.liq'
+BOUNDARY CONDITIONS FILE  ='CLI-Simple-Two.cli'
+FORTRAN FILE 		  ='user_fortran'
+
+/---------------------------------------------------------------------
+/ INPUT-OUTPUT, GRAPHICS AND LISTING
+/---------------------------------------------------------------------
+
+MASS-BALANCE                    = true
+VARIABLES FOR GRAPHIC PRINTOUTS = U,V,B,H
+LISTING PRINTOUT PERIOD         = 720
+GRAPHIC PRINTOUT PERIOD         = 1440
+INFORMATION ABOUT SOLVER        = true
+
+/---------------------------------------------------------------------
+/ INPUT-OUTPUT, INFORMATION
+/---------------------------------------------------------------------
+
+TITLE ='Twin Simple Lagoons'
+
+/---------------------------------------------------------------------
+/ NUMERICAL PARAMETERS
+/---------------------------------------------------------------------
+
+DISCRETIZATIONS IN SPACE       =12;11
+CONTINUITY CORRECTION          =true
+/	ORIGINAL DATE OF TIME          =2012;01;17
+/	ORIGINAL HOUR OF TIME          =17;00;00
+TREATMENT OF THE LINEAR SYSTEM =2
+/	NUMBER OF TIME STEPS           =171000
+/	NUMBER OF TIME STEPS           =85500
+/	NUMBER OF TIME STEPS           =21600
+FINITE VOLUME SCHEME           =0
+TIME STEP                      =0.125
+/	DURATION                       =342000
+/	DURATION                       =171000
+/	DURATION                       =129600
+DURATION                       =172800	/Seconds
+SUPG OPTION                    =1;1;1;1
+PARALLEL PROCESSORS            =16
+CHECKING THE MESH = YES
+
+/---------------------------------------------------------------------
+/ NUMERICAL PARAMETERS, SOLVER
+/---------------------------------------------------------------------
+
+SOLVER ACCURACY 				=1.E-5
+MAXIMUM NUMBER OF ITERATIONS FOR SOLVER 	=150
+MAXIMUM NUMBER OF ITERATIONS FOR K AND EPSILON	=150
+ 
+/---------------------------------------------------------------------
+/ NUMERICAL PARAMETERS, VELOCITY-CELERITY-HIGHT
+/---------------------------------------------------------------------
+
+IMPLICITATION FOR VELOCITY =0.6
+IMPLICITATION FOR DEPTH    =0.6
+
+/---------------------------------------------------------------------
+/ PHYSICAL CONSTANTS
+/---------------------------------------------------------------------
+
+WATER DENSITY =1020.
+
+/	DEBUGGER = 1

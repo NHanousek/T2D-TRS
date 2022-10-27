@@ -58,6 +58,7 @@
 !+     siphon formula when necessary
 !
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!| AT             |-->| MODEL CURRENT TIME IN SECONDS
 !| ALTBUS         |-->| ELEVATIONS OF CULVERTS
 !| ANGBUS         |-->| ANGLE OF CULVERTS WITH AXIS OX.
 !| C5             |-->| CORRECTION COEFFICIENT FOR FLOW TYPE 5
@@ -106,7 +107,8 @@
       USE DECLARATIONS_SPECIAL
       USE INTERFACE_PARALLEL, ONLY : P_MAX,P_MIN
       ! TO HAVE ACCESS TO LOGICAL UNITS OF FILES !culverts, TRS, Output
-      USE DECLARATIONS_TELEMAC2D, ONLY: T2D_FILES,T2DFO1,T2DFO2,T2DRFO
+      USE DECLARATIONS_TELEMAC2D, ONLY:
+     &  T2D_FILES,T2DFO1,T2DFO2,T2DRFO,AT,AABUS
       USE TRS_T2D
       IMPLICIT NONE
 !
@@ -142,7 +144,8 @@
       INTEGER N,I1,I2,ITRAC,FTYP
       INTEGER VOFFSET
 !
-      DOUBLE PRECISION L,LARG,HAUT1,HAUT2,HAUT,TETA
+      DOUBLE PRECISION L, CTH
+      DOUBLE PRECISION LARG,HAUT1,HAUT2,HAUT,TETA
       DOUBLE PRECISION S1,S2,CE1,CE2,CS1,CS2,Q,QMAX1,QMAX2
       DOUBLE PRECISION RD1,RD2,RD
       DOUBLE PRECISION FRIC,LONG,HAST,RAYON,TRASH,RADI1,RADI2
@@ -153,27 +156,81 @@
       DOUBLE PRECISION D1,D2,H1,H2
 !
       INTRINSIC SQRT,COS,SIN,MIN,MAX,ABS,ACOS
+
+!     TRS water level calculators
+      INTEGER :: TRS,IN,OUT,CLPB
+      DOUBLE PRECISION :: TMP_IN,TMP_OUT,TMP_W_IN,TMP_W_OUT
+      DOUBLE PRECISION :: SUM_IN,SUM_OUT,SUM_W,T_AREA,S_AREA
+      DOUBLE PRECISION :: AREA1,AREA2
+      DOUBLE PRECISION :: T_SF
+
 !
 !-----------------------------------------------------------------------
 !
       PI = 4.D0*ATAN(1.D0)
       TWOTHIRDS  = 2.D0/3.D0
       FOURTHIRDS = 4.D0/3.D0
+      CTH = AT/3600.0         ! Current time in hours, starts from 0
 !
 !-----------------------------------------------------------------------
 !
+! Initialise the tidal range schemes if they are included
+
+
+!-----------------------------------------------------------------------
 ! LOOP OVER THE CULVERTS
 !
 ! DEFAULT OPERATION
-      IF (MAXVAL(CLPBUS).LE.3) THEN
+      ! INITIALISE TRS
+      IF (MAXVAL(CLPBUS).GT.3) THEN
+        ! Set the flex values
+        CALL TRS_FLEX_VALUES(CTH)
+        ! Get the up and downstream water levels of the schemes
+        ! This has to be done here as we call many buse and telemac variables
+        DO TRS=1,NUM_TRS
+          WL_IN(TRS) = 0.0
+          WL_OUT(TRS) = 0.0
+          SUM_IN = 0.0
+          SUM_OUT = 0.0
+          SUM_W = 0.0
+          Q_TURB(TRS) = 0.0
+          Q_SLUICE(TRS) = 0.0
+          POWER(TRS) = 0.0
+          DO K=1,NBUSE
+            IF(CTRASH(K).EQ.TRS) THEN
+              IN=ENTBUS(K)
+              OUT=SORBUS(K)
+
+              TMP_IN = 0.0
+              TMP_OUT = 0.0
+
+              IF (IN.GT.0) TMP_IN = H(IN) + ZF(IN)
+              IF (OUT.GT.0) TMP_OUT = H(OUT) + ZF(OUT)
+
+              IF (NCSIZE.GT.1) THEN
+                TMP_IN = P_MIN(TMP_IN) + P_MAX(TMP_IN)
+                TMP_OUT = P_MIN(TMP_OUT) + P_MAX(TMP_OUT)
+              ENDIF
+              SUM_IN = SUM_IN + TMP_IN*CV(K)
+              SUM_OUT = SUM_OUT + TMP_OUT*CV(K)
+              SUM_W = SUM_W + CV(K)
+            ENDIF
+          ENDDO
+          WL_IN(TRS) = SUM_IN/SUM_W
+          WL_OUT(TRS)= SUM_OUT/SUM_W
+          HEADDIFF(TRS) = WL_IN(TRS) - WL_OUT(TRS)
+        ENDDO
+        ! Set a new mode
+        CALL TRS_NEW_MODE(CTH)
+        CALL TRS_BASE_FLOWS()
+      ENDIF
+
       DO N=1,NBUSE
-!
 !       IDENTIFIES ENTRY / EXIT NODES
 !
 !       NUMBER OF THE POINTS
         I1=ENTBUS(N)
         I2=SORBUS(N)
-!
 !       LOADS, TAKEN AS FREE SURFACE ELEVATION
 !
         IF(I1.GT.0) THEN
@@ -192,8 +249,8 @@
         ENDIF
 !       CASE WHERE ONE OF THE ENDS IS NOT IN THE SUB-DOMAIN
         IF(NCSIZE.GT.1) THEN
-          S1=P_MAX(S1)+P_MIN(S1)
-          S2=P_MAX(S2)+P_MIN(S2)
+          S1=P_MAX(S1)+P_MIN(S1)  ! WATER LEVEL @ INSIDE NODE
+          S2=P_MAX(S2)+P_MIN(S2)  ! WATER LEVEL @ OUTSIDE NODE
           QMAX1=P_MAX(QMAX1)+P_MIN(QMAX1)
           QMAX2=P_MAX(QMAX2)+P_MIN(QMAX2)
         ENDIF
@@ -226,6 +283,288 @@
         D2=DELBUS(N,2)
         H1=HAUT1*COS(D1)
         H2=HAUT2*COS(D2)
+        CLPB=CLPBUS(N)
+
+!       COMPUTES FLOWS BASED ON THE TIDAL RANGE SCHEME ASSUMPTIONS
+        IF (CLPB.GE.5) THEN
+          TRS = INT(TRASH)
+          Q = 0.0 ! FLOW THROUGH THIS CULVERT
+!       NEED TO CHECK IF IN/OUT WORKS WITH THE REST OF THE CODE
+          ! IN=ENTBUS(N)
+          ! OUT=SORBUS(N)
+          I1=ENTBUS(N)
+          I2=SORBUS(N)
+!       CLP     Flow control type. Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
+!       CV5     Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
+!       FLOW CALCS
+!       MAX VOLUME CHANGE CHECKS
+!       USE THE LOCAL COEFFS WHERE POSSIBLE
+          TRS = TRASH ! Haha.
+          SELECT CASE (CLPB)
+          CASE(4) ! Control point
+            Q = 0.0 ! no flow, ever
+
+          CASE(5) ! Turbine
+            T_AREA = 0.25*PI*LARG*LARG        ! Turbine area (m2)
+            T_SF = (LARG**2)/(ORIG_DIAM_T(TRS)**2) ! Turbine scale factor
+            ! Ramp * Scale Factor * Flow
+            SELECT CASE (MODE(TRS))
+              CASE (0)  ! Initial warmup
+              !DOUBLE PRECISION FUNCTION TRS_ORIFICE(CD,AREA,HDIFF) RESULT(FLOW)
+                Q = TRS_RAMP(FLEX_TIMES(TRS,1),PHASETIME(TRS))*
+     &            TRS_ORIFICE(CE1,T_AREA,HEADDIFF(TRS))
+
+              CASE (1)  ! High water hold
+                ! Ramp down turbine flow if appropriate
+                IF (PHASETIME(TRS).LT.RAMPTIME(TRS)) THEN
+                  IF ((ISPUMPING(TRS)).AND.
+     &               ((CORRV5.EQ.1).OR.(CORRV5.EQ.3))) THEN
+                    ! ramp down pump flow
+                    Q = (1.0 - RAMP(TRS))*QP_BASE(TRS)*T_SF*CS2
+                  ELSE
+                    ! If parallel sluice
+                    IF(CORR56.EQ.1) THEN
+                      Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)*T_SF*CE2
+                    ELSE
+                      Q = (1.0 - RAMP(TRS))*
+     &                  TRS_ORIFICE(CE1,T_AREA,HEADDIFF(TRS))
+                    ENDIF
+                  ENDIF
+                ELSE
+                  Q = 0.0
+                ENDIF
+
+              CASE (2)  ! Ebb generation
+                Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CE1 ! Normal flow
+
+              CASE (3)  ! Ebb sluicing
+                IF (CORR56.EQ.1) THEN
+                  Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CE1
+                ELSE
+                  ! ramp down into 0.0
+                  Q = TRS_ORIFICE(CE1,T_AREA,HEADDIFF(TRS))
+                ENDIF
+
+              CASE (-1) ! Ebb pumping
+                IF ((CORRV5.EQ.1).OR.(CORRV5.EQ.3)) THEN
+                  Q = RAMP(TRS)*QP_BASE(TRS)*T_SF*CS1
+                ENDIF
+
+              CASE (4)  ! Low water hold
+              ! Ramp down turbine flow if appropriate
+              IF (PHASETIME(TRS).LT.RAMPTIME(TRS)) THEN
+                IF ((ISPUMPING(TRS)).AND.
+     &              ((CORRV5.EQ.1).OR.(CORRV5.EQ.3))) THEN
+                  Q = (1.0 - RAMP(TRS))*QP_BASE(TRS)*T_SF*CS1
+                ELSE
+                  IF(CORR56.EQ.1) THEN
+                    Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)*T_SF*CE1
+                  ELSE
+                    Q = (1.0 - RAMP(TRS))*
+     &                TRS_ORIFICE(CE2,T_AREA,HEADDIFF(TRS))
+                  ENDIF
+                ENDIF
+              ELSE
+                Q = 0.0
+              ENDIF
+
+              CASE (5)  ! Flood generation
+                Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CE2
+
+              CASE (6)  ! Flood sluicing
+                ! If parallel sluicing (and thus generating)
+                IF (CORR56.EQ.1) THEN
+                  Q = QG_BASE(TRS)*T_SF*CE2
+                ELSE
+                  ! Turbine operates as sluice
+                  Q = TRS_ORIFICE(CE2,T_AREA,HEADDIFF(TRS))
+                ENDIF
+
+
+
+              CASE (-2) ! Flood pumping
+                Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CS2
+
+              CASE DEFAULT ! Error
+              WRITE(*,*)'SOME KIND OF TRS MODE ERROR IN TURB FLOW CALC'
+
+            END SELECT
+
+          CASE(6) ! Sluice
+
+          ! Determine sluice area based on shape
+            IF (CIR.EQ.1) THEN
+              S_AREA = 0.25*PI*LARG*LARG        ! Sluice area (m2)
+            ELSEIF (CIR.EQ.0) THEN
+!             ZF = ELEVATION OF BOTTOM
+!             Assume the area in the sluice flow is the Base * mean WL
+              TMP_D1 = 0.0
+              TMP_D2 = 0.0
+              IF (I1.GT.0) TMP_D1 = ZF(I1)
+              IF (I2.GT.0) TMP_D2 = ZF(I2)
+
+              IF (NCSIZE.GT.1) THEN
+                TMP_D1 = P_MIN(TMP_D1) + P_MAX(TMP_D1)
+                TMP_D2 = P_MIN(TMP_D2) + P_MAX(TMP_D2)
+              ENDIF
+            ! CALC SLUICE AREA AS MEAN SWL - MEAN BED LEVEL
+              S_AREA = LARG*
+     &          (WL_IN(TRS) + WL_OUT(TRS)/2 -
+     &          (TMP_D1 + TMP_D2)/2)
+            ELSE
+              ! You can add more area calc options here if desired
+              ! ASSUME SQUARE
+              S_AREA = LARG*LARG
+            ENDIF
+
+            ! Orifice equation correctly constructed.
+            SELECT CASE (MODE(TRS))
+              CASE (0)  ! Initial warmup, slow ramp up to get motion etc.
+                Q = RAMP(TRS)*
+     &            TRS_ORIFICE(WARMUP(TRS),S_AREA,HEADDIFF(TRS))
+
+              CASE (1)  ! High water hold
+                ! Ramp down as the sluices close
+                IF (PHASETIME(TRS).LT.RAMPTIME(TRS)) THEN
+                  IF (ISPUMPING(TRS)) THEN
+                    ! for simplicity no sluice flow when pumping
+                    Q = 0.0
+                  ELSE
+                    ! ramp down
+                    Q = (1.0 - RAMP(TRS))*
+     &                TRS_ORIFICE(CE2,S_AREA,HEADDIFF(TRS))
+                  ENDIF
+                ELSE
+                  ! No flow, normal hold
+                  Q = 0.0
+                ENDIF
+
+              CASE (2)  ! Ebb generation, no sluice flow by default
+                Q = 0.0
+
+              CASE (3)  ! Ebb sluicing, ramp up into normal
+                Q = RAMP(TRS)*TRS_ORIFICE(CE1,S_AREA,HEADDIFF(TRS))
+
+              CASE (-1) ! Ebb pumping
+                Q = 0.0
+
+              CASE (4)  ! Low water hold, same as high water hold
+                IF (PHASETIME(TRS).LT.RAMPTIME(TRS)) THEN
+                  IF (ISPUMPING(TRS)) THEN
+                    Q = 0.0
+                  ELSE
+                    Q = (1.0 - RAMP(TRS))*
+     &                TRS_ORIFICE(CE1,S_AREA,HEADDIFF(TRS))
+                  ENDIF
+                ELSE
+                  Q = 0.0
+                ENDIF
+
+              CASE (5)  ! Flood generation, no sluice flow by default
+                  Q = 0.0
+
+              CASE (6)  ! Flood sluicing, ramp up into normal
+                Q = RAMP(TRS)*TRS_ORIFICE(CE2,S_AREA,HEADDIFF(TRS))
+
+              CASE (-2) ! Flood pumping, no flow.
+                Q = 0.0
+
+              CASE DEFAULT ! you added a new mode somewhere and did not add it here..?
+                WRITE(*,*) 'MODE ERROR', MODE(TRS),
+     &                     ' IN SLUICE FLOW CALC CULV [',N,']'
+            END SELECT
+
+          CASE DEFAULT
+            IF ((CLPB.GT.6).OR.(CLPB.LE.0)) THEN
+              ! Some kind of error
+              WRITE(*,*)'INVALID CULVERT (CLP) VALUE [',
+     &                   CLPB,']'
+            ELSE
+              ! Culvert operates as usual, copy the normal buse functionality into here?
+            ENDIF
+          END SELECT
+        ! Apply the calculated flow to the culvert with relaxation
+        DBUS(N)= (1.D0-RELAXB)*DBUS(N) + RELAXB*Q
+
+!       LIMITATION ON AVAILABLE WATER
+!       Same as prior
+        IF(DBUS(N).GT.0.D0) THEN
+          DBUS(N)=MIN(QMAX1,DBUS(N))
+        ELSE
+          DBUS(N)=MAX(-QMAX2,DBUS(N))
+        ENDIF
+!       LIMITATION ON WATER LEVEL SHUTOFF
+!       USES NODAL WATER LEVEL
+        IF ((HAUT1.GE.S1).OR.(HAUT2.GE.S2)) THEN
+          DBUS(N) = 0.0
+        ENDIF
+!       CALCULATE POWER IF NEEDED
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+!     MODES:
+!      N : Description,         Start condition,  End condition,
+!      0 : Initial sluice mode, Time = 0,         Time = FLX_TIMES(1)
+!      1 : High water holding,                    HD >= H_START
+!      2 : Ebb generation,                        HD <= H_END
+!      3 : Ebb sluicing,                          HD ~= 0.0
+!     -1 : Ebb pumping,                           WL_IN <= PUMP_TARG
+!      4 : Low water holding,                     HD >= H_START
+!      5 : Flood generation,                      HD <= H_END
+!      6 : Flood sluicing,                        HD ~= 0.0
+!     -2 : FLood pumping,                         WL_IN <= PUMP_TARG
+!+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        IF (ENTET) THEN
+          CALL TRS_POWER(HEADDIFF(TRS),T_SF,TRS,CLPB,CORR56,CORRV5)
+          ! CALL TRS_POWER(DBUS(N),T_SF,TRS,CLPB,CORR56,CORRV5)
+          CALL TRS_FLOW(DBUS(N),TRS,CLPB)
+        ENDIF
+
+!       FLOW VELOCITY CALCS
+        IF(DBUS(N).GT.0.D0) THEN
+
+          UBUS(2,N) = (COS(D2)*DBUS(N)/ALTBUS(N,2))*COS(ANGBUS(N,2))
+          VBUS(2,N) = (COS(D2)*DBUS(N)/ALTBUS(N,2))*SIN(ANGBUS(N,2))
+
+          IF(NCSIZE.GT.1) THEN
+            UBUS(1,N) = P_MAX(UBUS(1,N))+P_MIN(UBUS(1,N))
+            VBUS(1,N) = P_MAX(VBUS(1,N))+P_MIN(VBUS(1,N))
+          ENDIF
+
+        ELSEIF(DBUS(N).LT.0.D0) THEN
+          UBUS(1,N) = (COS(D1)*DBUS(N)/ALTBUS(N,1))*COS(ANGBUS(N,1))
+          VBUS(1,N) = (COS(D1)*DBUS(N)/ALTBUS(N,1))*SIN(ANGBUS(N,1))
+          IF(I2.GT.0) THEN
+            ! NO CLUE WHAT KSCE IS OR DOES...
+            IF (PRESENT(KSCE)) THEN
+              VOFFSET = (KSCE(NPTSCE+NBUSE+N)-1)*NPOIN2
+            ELSE
+              VOFFSET = 0
+            ENDIF
+            UBUS(2,N) = U(I2+VOFFSET)
+            VBUS(2,N) = V(I2+VOFFSET)
+          ELSE
+            UBUS(2,N) = 0.D0
+            VBUS(2,N) = 0.D0
+          ENDIF
+          IF(NCSIZE.GT.1) THEN
+            UBUS(2,N) = P_MAX(UBUS(2,N))+P_MIN(UBUS(2,N))
+            VBUS(2,N) = P_MAX(VBUS(2,N))+P_MIN(VBUS(2,N))
+          ENDIF
+
+        ELSEIF(DBUS(N).EQ.0.D0) THEN
+          UBUS(1,N) = 0.D0
+          VBUS(1,N) = 0.D0
+          UBUS(2,N) = 0.D0
+          VBUS(2,N) = 0.D0
+          IF(NCSIZE.GT.1) THEN
+            UBUS(1,N) = P_MAX(UBUS(1,N))+P_MIN(UBUS(1,N))
+            VBUS(1,N) = P_MAX(VBUS(1,N))+P_MIN(VBUS(1,N))
+            UBUS(2,N) = P_MAX(UBUS(2,N))+P_MIN(UBUS(2,N))
+            VBUS(2,N) = P_MAX(VBUS(2,N))+P_MIN(VBUS(2,N))
+          ENDIF
+        ENDIF
+
+        ELSE
+!       ORGINAL BUSE FORMULATION
 !
 !       COMPUTES THE FLOW ACCORDING TO DELTAH
 !       IF THE LINEAR PRESSURE LOSS IS NEGLIGIBLE, COULD HAVE DIFFERENT
@@ -532,6 +871,7 @@
           CALL PLANTE(1)
           STOP
         ENDIF
+        ENDIF
 !
 !       NOTHING HAPPENS IF THE LOADS AT THE 2 ENDS ARE LOWER THAN
 !       THE ELEVATION OF THE NOZZLES
@@ -551,16 +891,19 @@
           DBUS(N)=MAX(-QMAX2,DBUS(N))
         ENDIF
 !
-!       SLUICE VALVE TREATMENT
+!       SLUICE VALVE TREATMENT (DIRECTIONALITY)
 !
         IF((CLPBUS(N).EQ.1.AND.S2.GT.S1).OR.
      &     (CLPBUS(N).EQ.2.AND.S1.GT.S2).OR.
-     &     (CLPBUS(N).EQ.3))
+     &     (CLPBUS(N).EQ.3).OR.
+     &     (CLPBUS(N).EQ.4))
      &     DBUS(N) = 0.D0
 !
 !       PRINT FLOW RATES VALUES FOR EACH ACTIVE CULVERT
-        IF(ENTET.AND.ABS(DBUS(N)).GT.1.D-4) THEN
-          WRITE(LU,*) 'CULVERT ',N,' DISCHARGE OF ',DBUS(N),' M3/S'
+! AT is the telemac model time in seconds.
+        IF((ENTET.AND.ABS(DBUS(N)).GT.1.D-4).AND.
+     &    (MAXVAL(CLPBUS).LE.3)) THEN
+          WRITE(LU,*)'CULV: ',N,', Q = ',DBUS(N),' M³/S'
         ENDIF
 !
 !  TREATS THE VELOCITIES AT THE SOURCES
@@ -665,37 +1008,16 @@
      &         +P_MIN(TBUS%ADR(ITRAC)%P%R(N))
             ENDIF
           ENDDO
-        ENDIF
+        ENDIF ! End TRS vs normal culvert loop
 !
 !  END OF THE LOOP OVER THE CULVERTS
 !
       ENDDO ! N
-!
-!-----------------------------------------------------------------------
-!     END OF NORMAL OPERATION, MODEL HAS TRS
-      ELSE
-
-!       N. Hanousek 05/07/2022
-        IF (TRS_FIRST) THEN
-          NUM_TRS =
-          ! And other bits 
-          CALL TRS_READ_DATAFILES()
-        ENDIF
-
-        CALL TRS_W_LEVELS()
-        CALL TRS_FLOWS()
-
-        IF (ITS TIME TO PRINT THE DATA) THEN
-          CALL TRS_POWER()
-          CALL TRS_COLLATE_Q()
-          IF (TIME TO WRITE TO CONSOLE) THEN
-            CALL TRS_WRITE_RESULTS()
-          ENDIF
-          IF (TIME TO WRITE TO FILE) THEN
-            CALL TRS_WRITE_STATUS()
-          ENDIF
+      IF (IPID.EQ.0) THEN
+        IF(ENTET) THEN
+          CALL TRS_WRITE_STATUS(CTH)
+          K = NEWUNIT()
+          CALL TRS_WRITE_RESULTS(CTH, K)
         ENDIF
       ENDIF
-
-      RETURN
-      END
+      END SUBROUTINE BUSE

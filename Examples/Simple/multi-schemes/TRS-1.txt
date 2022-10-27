@@ -1,0 +1,69 @@
+Demo tidal range scheme config file a ! will act as comment at start/within of line, BEWARE OF TABS
+RAMPTIME            0.33333
+PREV_SWITCH         0.0
+MAX_GEN             12.0
+MAX_HOLD            8
+MAX_SLUICE          4
+MAX_PUMP            2
+IS2WAY              True
+ISFLEXIBLE          TRUE
+ISPUMPING           F
+MODE                0
+MODE_FIRST          4
+N_HILLS_G           1
+N_HILLS_P           1
+LEN_HILLS_G         7
+LEN_HILLS_P         7
+N_FLEX              5
+PUMPTOLEVEL         TRUE
+ORIG_DIAM_T         9
+WARMUP              0.5
+!Begin Hill charts.
+!Head levels must be consistent for flow/power levels
+!but do not need to be the same for pump/generator
+!Must be in sequential order
+!FORMAT - HEADDIFF POWER_K1 POWER_K2
+!Must be the same size for each scheme, even if there are a lot of zeros
+!In this case we are using a simplified AH 9m bulb for generation
+!and adjusted/assumed values for the pumping curves
+GENERATOR POWER
+0    0
+1    0
+2    5
+3.7  16
+7    38.9
+9    38.9
+11.3 38.9
+GENERATOR FLOW
+0    0
+1    304
+2    458
+3.7  650
+7    723
+9    511
+11.3 401
+PUMP POWER
+0    10
+1    10
+2    10
+3.7  16
+7    38.9
+9    38.9
+11.3 38.9
+PUMP:F 
+0.0  100
+1.1  304
+2.0  458
+3.7  650
+7.0  723
+9.0  511
+11.3 401
+!For flex control, fill unwanted columns with 0's or similar
+!A clever loader would be nice but is not priority atm.
+!Time before first start time is the warmup period.
+FLEX CONTROL (START_TIME,H_START,H_END,TURBINE_CHART,PUMP_TARGET,PUMP_CHART)
+7.1    2.11 1.11 1 0 0
+13.5   2.21 1.21 1 0 0
+19     2.31 1.31 1 0 0
+20.5   2.41 1.41 1 0 0
+72     2.51 1.51 1 0 0
