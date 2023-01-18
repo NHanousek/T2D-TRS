@@ -200,17 +200,26 @@
             IF(CTRASH(K).EQ.TRS) THEN
               IN=ENTBUS(K)
               OUT=SORBUS(K)
-
-              TMP_IN = 0.0
-              TMP_OUT = 0.0
-
-              IF (IN.GT.0) TMP_IN = H(IN) + ZF(IN)
-              IF (OUT.GT.0) TMP_OUT = H(OUT) + ZF(OUT)
+              ! IF(NCSIZE.GT.1) THEN
+              !   IN = P_MAX(IN) + P_MIN(IN)
+              !   OUT = P_MAX(OUT) + P_MIN(OUT)
+              ! ENDIF
+              IF (IN.GT.0) THEN
+                TMP_IN = H(IN) + ZF(IN)
+              ELSE
+                TMP_IN = 0.0
+              ENDIF
+              IF (OUT.GT.0) THEN
+                TMP_OUT = H(OUT) + ZF(OUT)
+              ELSE
+                TMP_OUT = 0.0
+              ENDIF
 
               IF (NCSIZE.GT.1) THEN
                 TMP_IN = P_MIN(TMP_IN) + P_MAX(TMP_IN)
                 TMP_OUT = P_MIN(TMP_OUT) + P_MAX(TMP_OUT)
               ENDIF
+
               SUM_IN = SUM_IN + TMP_IN*CV(K)
               SUM_OUT = SUM_OUT + TMP_OUT*CV(K)
               SUM_W = SUM_W + CV(K)
@@ -218,11 +227,17 @@
           ENDDO
           WL_IN(TRS) = SUM_IN/SUM_W
           WL_OUT(TRS)= SUM_OUT/SUM_W
+          IF (SUM_W.EQ.0) THEN
+            WRITE(*,*)'!!!!!! WARNING SUM_W = 0 !!!!!!!!!!!!!!!'
+          ENDIF
           HEADDIFF(TRS) = WL_IN(TRS) - WL_OUT(TRS)
+    !       WRITE(*,*)'TRS: ',TRS,' SUM_W: '
+    !  &    ,SUM_W,' HEADDIFF: ',HEADDIFF(TRS)
         ENDDO
         ! Set a new mode
         CALL TRS_NEW_MODE(CTH)
         CALL TRS_BASE_FLOWS()
+        ! WRITE(*,*)
       ENDIF
 
       DO N=1,NBUSE
@@ -231,6 +246,10 @@
 !       NUMBER OF THE POINTS
         I1=ENTBUS(N)
         I2=SORBUS(N)
+        ! IF(NCSIZE.GT.1) THEN
+        !   I1 = P_MAX(I1) + P_MIN(I1)
+        !   I2 = P_MAX(I2) + P_MIN(I2)
+        ! ENDIF
 !       LOADS, TAKEN AS FREE SURFACE ELEVATION
 !
         IF(I1.GT.0) THEN
@@ -240,6 +259,7 @@
           S1=0.D0
           QMAX1=0.D0
         ENDIF
+
         IF(I2.GT.0) THEN
           S2=H(I2)+ZF(I2)
           QMAX2=0.9D0*H(I2)*V2DPAR%R(I2)/DT
@@ -257,43 +277,50 @@
 !
 !       COEFFICIENTS FOR COMPUTATION OF PRESSURE LOSS
 !
-        CE1=CEBUS(N,1)
-        CE2=CEBUS(N,2)
-        CS1=CSBUS(N,1)
-        CS2=CSBUS(N,2)
-        L=LBUS(N)
-        RD1=ALTBUS(N,1)
-        RD2=ALTBUS(N,2)
-        RD=0.5D0*(RD1+RD2)
-        LARG=LRGBUS(N)
-        HAUT1=HAUBUS(N,1)
-        HAUT2=HAUBUS(N,2)
-        RADI1=0.5D0*HAUT1
-        RADI2=0.5D0*HAUT2
-        FRIC=FRICBUS(N)
-        LONG=LONGBUS(N)
-        TRASH=CTRASH(N)
-        CORR56=C56(N)
-        VALVE=CV(N)
-        CORRV5=CV5(N)
-        CORR5=C5(N)
-        CIR=CIRC(N)
+        CE1=CEBUS(N,1)    ! TRS -> Ebb head loss coeff when generating/suicing
+        CE2=CEBUS(N,2)    ! TRS -> Flood head loss coeff when generating/suicing
+        CS1=CSBUS(N,1)    ! TRS -> Ebb head loss coeff when pumping
+        CS2=CSBUS(N,2)    ! TRS -> Flood head loss coeff when pumping
+        L=LBUS(N)         ! TRS -> 
+        RD1=ALTBUS(N,1)   ! TRS -> Turbine draft tube area at p1
+        RD2=ALTBUS(N,2)   ! TRS -> Turbine draft tube area at p2
+        RD=0.5D0*(RD1+RD2)! TRS -> 
+        LARG=LRGBUS(N)    ! TRS -> Width of sluice gate/turbine diameter
+        HAUT1=HAUBUS(N,1) ! TRS -> 
+        HAUT2=HAUBUS(N,2) ! TRS -> 
+        RADI1=0.5D0*HAUT1 ! TRS -> 
+        RADI2=0.5D0*HAUT2 ! TRS -> 
+        FRIC=FRICBUS(N)   ! TRS -> 
+        LONG=LONGBUS(N)   ! TRS -> 
+        TRASH=CTRASH(N)   ! TRS -> 
+        CORR56=C56(N)     ! TRS -> 
+        VALVE=CV(N)       ! TRS -> 
+        CORRV5=CV5(N)     ! TRS -> Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
+        CORR5=C5(N)       ! TRS -> Number of turbines/pumps at given node.
+        CIR=CIRC(N)       ! TRS -> 
         HAUT=MIN(HAUT1,HAUT2)
-        D1=DELBUS(N,1)
-        D2=DELBUS(N,2)
-        H1=HAUT1*COS(D1)
-        H2=HAUT2*COS(D2)
-        CLPB=CLPBUS(N)
+        D1=DELBUS(N,1)    ! TRS -> 
+        D2=DELBUS(N,2)    ! TRS -> 
+        H1=HAUT1*COS(D1)  ! TRS -> 
+        H2=HAUT2*COS(D2)  ! TRS -> 
+        CLPB=CLPBUS(N)    ! TRS -> Flow control type. Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
 
 !       COMPUTES FLOWS BASED ON THE TIDAL RANGE SCHEME ASSUMPTIONS
         IF (CLPB.GE.5) THEN
           TRS = INT(TRASH)
           Q = 0.0 ! FLOW THROUGH THIS CULVERT
-!       NEED TO CHECK IF IN/OUT WORKS WITH THE REST OF THE CODE
+          !       NEED TO CHECK IF IN/OUT WORKS WITH THE REST OF THE CODE
           ! IN=ENTBUS(N)
           ! OUT=SORBUS(N)
           I1=ENTBUS(N)
           I2=SORBUS(N)
+
+          ! IF(NCSIZE.GT.1) THEN
+          !   I1 = P_MAX(I1) + P_MIN(I1)
+          !   I2 = P_MAX(I2) + P_MIN(I2)
+          ! ENDIF
+    !       WRITE(*,*)'TRS: ',TRS,' NODE: ',N,' I1: ',
+    !  &  I1,' I2: ',I2,' HD: ',HEADDIFF(TRS)
 !       CLP     Flow control type. Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
 !       CV5     Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only
 !       FLOW CALCS
@@ -306,13 +333,13 @@
 
           CASE(5) ! Turbine
             T_AREA = 0.25*PI*LARG*LARG        ! Turbine area (m2)
-            T_SF = (LARG**2)/(ORIG_DIAM_T(TRS)**2) ! Turbine scale factor
+            T_SF = (LARG**2)/(ORIG_DIAM_T(TRS)**2)*CORR5 ! Turbine scale factor
             ! Ramp * Scale Factor * Flow
             SELECT CASE (MODE(TRS))
               CASE (0)  ! Initial warmup
               !DOUBLE PRECISION FUNCTION TRS_ORIFICE(CD,AREA,HDIFF) RESULT(FLOW)
-                Q = TRS_RAMP(FLEX_TIMES(TRS,1),PHASETIME(TRS))*
-     &            TRS_ORIFICE(CE1,T_AREA,HEADDIFF(TRS))
+                Q = TRS_RAMP(FLEX_TIMES(1,TRS),PHASETIME(TRS))*
+     &            TRS_ORIFICE(CE1,T_AREA,HEADDIFF(TRS))*T_SF
 
               CASE (1)  ! High water hold
                 ! Ramp down turbine flow if appropriate
@@ -521,8 +548,8 @@
 !       FLOW VELOCITY CALCS
         IF(DBUS(N).GT.0.D0) THEN
 
-          UBUS(2,N) = (COS(D2)*DBUS(N)/ALTBUS(N,2))*COS(ANGBUS(N,2))
-          VBUS(2,N) = (COS(D2)*DBUS(N)/ALTBUS(N,2))*SIN(ANGBUS(N,2))
+          UBUS(2,N) = (COS(D2)*DBUS(N)/RD2)*COS(ANGBUS(N,2))
+          VBUS(2,N) = (COS(D2)*DBUS(N)/RD2)*SIN(ANGBUS(N,2))
 
           IF(NCSIZE.GT.1) THEN
             UBUS(1,N) = P_MAX(UBUS(1,N))+P_MIN(UBUS(1,N))
@@ -530,8 +557,8 @@
           ENDIF
 
         ELSEIF(DBUS(N).LT.0.D0) THEN
-          UBUS(1,N) = (COS(D1)*DBUS(N)/ALTBUS(N,1))*COS(ANGBUS(N,1))
-          VBUS(1,N) = (COS(D1)*DBUS(N)/ALTBUS(N,1))*SIN(ANGBUS(N,1))
+          UBUS(1,N) = (COS(D1)*DBUS(N)/RD1)*COS(ANGBUS(N,1))
+          VBUS(1,N) = (COS(D1)*DBUS(N)/RD1)*SIN(ANGBUS(N,1))
           IF(I2.GT.0) THEN
             ! NO CLUE WHAT KSCE IS OR DOES...
             IF (PRESENT(KSCE)) THEN

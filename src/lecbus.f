@@ -241,14 +241,36 @@
             ! As CTRASH is a real, round it down to int, assumes that
             ! the proper values are less than 2...
             NUM_TRS = INT(MAXVAL(CTRASH))
+            IF (IPID.EQ.0) THEN
+              WRITE(*,*) "+----------------------------------------+"
+              WRITE(*,*) "    ",NUM_TRS,"    SCHEMES"
+              WRITE(*,*) "+----------------------------------------+"
+              WRITE(*,*) "|:          TIDAL      .::.              |"
+              WRITE(*,*) "| :  ____   RANGE     .:  :.             |"
+              WRITE(*,*) "| ':/    \  MODEL     :    :             |"
+              WRITE(*,*) "|  /.     \          :     '.   _____    |"
+              WRITE(*,*) "| / :      \G       .'      :  /     \   |"
+              WRITE(*,*) "|/  ':      \E      :       ':/       \  |"
+              WRITE(*,*) "|    :       \N    :'        :         \ |"
+              WRITE(*,*) "|     :       \   .:        / :         \|"
+              WRITE(*,*) "|'''''':'''''''\'':''''''''/''':'''''''''|"
+              WRITE(*,*) "|      :        \.:       /    :         |"
+              WRITE(*,*) "|       :        \       /     ':       :|"
+              WRITE(*,*) "|       '.      :'\     /       :.     .:|"
+              WRITE(*,*) "|        :.    .:  \___/         :.   .: |"
+              WRITE(*,*) "|         :.  .:    HOLD          :...:  |"
+              WRITE(*,*) "|          '::'                          |"
+              WRITE(*,*) "+----------------------------------------+"
+            ENDIF
             ! Read all the TRS-X.txt files...
             ! First find a free unit
             TMP_INT = NEWUNIT()
             ! Read the files
             CALL TRS_READ_DATAFILES(TMP_INT)
+            ! IF (IPID.EQ.0) WRITE(*,*) 'ALL TRS FILES READ'
+            CALL TRS_FLEX_VALUES(0.D0)
             TRS_FIRST = .FALSE.
           ENDIF
-        CALL TRS_FLEX_VALUES(0.D0)
       ENDIF
       GO TO 1000
 !

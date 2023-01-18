@@ -89,7 +89,7 @@ TIME STEP                      =0.125
 /	DURATION                       =129600
 DURATION                       =172800	/Seconds
 SUPG OPTION                    =1;1;1;1
-PARALLEL PROCESSORS            =16
+PARALLEL PROCESSORS            =4
 CHECKING THE MESH = YES
 
 /---------------------------------------------------------------------

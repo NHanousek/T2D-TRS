@@ -460,7 +460,7 @@
         SELECT CASE(MODE(TRS))
           CASE (0)  !      0 : Initial sluicing warmup
 !           Ends when the start of flexing begins
-            IF (CT.GE.FLEX_TIMES(TRS,1)) THEN
+            IF (CT.GE.FLEX_TIMES(1,TRS)) THEN
               MODE(TRS) = MODE_FIRST(TRS)  !     Default is 1 -> High water holding
               PREV_SWITCH(TRS) = CT
             ENDIF
@@ -583,14 +583,14 @@
         PUMP_CHART(TRS) = PUMP_CHARTS(N_FLEX(TRS),TRS)
         PREV_I_FLEX_TIMES(TRS) = N_FLEX(TRS)
         ! SAME FLEX PERIOD AS LAST TIME
-      ELSEIF ((CT.GE.FLEX_TIMES(PREV_I_FLEX_TIMES(TRS)-1,TRS))
-     &  .AND.(CT.LT.FLEX_TIMES(PREV_I_FLEX_TIMES(TRS),TRS))) THEN
-        H_START(TRS) = H_STARTS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
-        H_END(TRS) = H_ENDS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
-        TURB_CHART(TRS) = TURB_CHARTS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
-        PUMP_TARG(TRS) = PUMP_TARGS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
-        PUMP_CHART(TRS) = PUMP_CHARTS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
-        PREV_I_FLEX_TIMES(TRS) = PREV_I_FLEX_TIMES(TRS)
+    !   ELSEIF ((CT.GE.FLEX_TIMES(PREV_I_FLEX_TIMES(TRS)-1,TRS))
+    !  &  .AND.(CT.LT.FLEX_TIMES(PREV_I_FLEX_TIMES(TRS),TRS))) THEN
+    !     H_START(TRS) = H_STARTS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
+    !     H_END(TRS) = H_ENDS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
+    !     TURB_CHART(TRS) = TURB_CHARTS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
+    !     PUMP_TARG(TRS) = PUMP_TARGS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
+    !     PUMP_CHART(TRS) = PUMP_CHARTS(PREV_I_FLEX_TIMES(TRS)-1,TRS)
+    !     PREV_I_FLEX_TIMES(TRS) = PREV_I_FLEX_TIMES(TRS)
 
       ELSE
         !IN THE DYNAMIC FLEX PERIOD
@@ -841,8 +841,6 @@
           WRITE(*,*) '++++++++++++++++++++++++++++++++++++',
      & '++++++++++++++++++++++++++++++++++++++++++++'
           WRITE(*,*) 'File [',TRS_FNAME,'] Opened'
-          WRITE(*,*) '++++++++++++++++++++++++++++++++++++',
-     & '++++++++++++++++++++++++++++++++++++++++++++'
         ENDIF
       IF (TRS_FIRST) THEN
         READ(NF_TRS,*) LINE !Header line
@@ -1154,8 +1152,6 @@
 
 702     CONTINUE
         IF (IPID.EQ.0) THEN
-        WRITE(*,*) '++++++++++++++++++++++++++++++++++++',
-     &    '++++++++++++++++++++++++++++++++++++++++++++'
         WRITE(*,*) 'Done reading [',TRIM(TRS_FNAME),'] Control File.'
         WRITE(*,*) '++++++++++++++++++++++++++++++++++++',
      &    '++++++++++++++++++++++++++++++++++++++++++++'
