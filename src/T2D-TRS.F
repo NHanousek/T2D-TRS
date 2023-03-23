@@ -37,6 +37,7 @@
 
 !     MODULE CONTROL
       LOGICAL,SAVE :: TRS_FIRST = .TRUE.      !Is this the first call of the module
+      LOGICAL,SAVE :: TRS_DEBUG = .TRUE.
       LOGICAL,SAVE :: WRITE_TRS = .FALSE. !Print the TRS data to the file this timestep
       LOGICAL,SAVE :: G_PRNT_TRS = .TRUE. !true => print with graphical printout period
       INTEGER,SAVE :: NUM_TRS = 0         !How many independant tidal range schemes...
@@ -442,17 +443,23 @@
 !   TRS_NEW_MODE
 !   Updates the operating mode of the tidal range schemes based on the
 !   decision tree and the current mode, CT only used to check phase
+!   aka next mode
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !
       SUBROUTINE TRS_NEW_MODE(CT)
 
       DOUBLE PRECISION,INTENT(IN) :: CT!, TRS_RAMP
 
-      DOUBLE PRECISION :: PHASE_T, HD
+      DOUBLE PRECISION :: HD,HDMAX,HDMIN,HDI
       INTEGER :: TRS
-
+      ! So which head difference to use when does have an impact on a large scheme...
+      HD = ABS(SUM(HEADDIFF(:)))/NUM_TRS
+      HDMAX = MAXVAL(ABS(HEADDIFF(:)))
+      HDMIN = MINVAL(ABS(HEADDIFF(:)))
+      
       DO TRS = 1,NUM_TRS
-      HD = ABS(HEADDIFF(TRS))
+      ! HD = ABS(HEADDIFF(TRS))
+      HDI = HEADDIFF(TRS)
       PHASETIME(TRS) = CT - PREV_SWITCH(TRS) ! Initialise with prior phase time
 
       ! If we have completed starting operation of this phase
@@ -465,13 +472,13 @@
               PREV_SWITCH(TRS) = CT
             ENDIF
           CASE (1)  !      1 : High water holding
-            IF ((HD.GE.H_START(TRS))              ! Enough head difference
+            IF ((HDMAX.GE.H_START(TRS))              ! Enough head difference
      &      .OR.(PHASETIME(TRS).GT.MAX_HOLD(TRS))) THEN  ! Time limit reached
               MODE(TRS) = 2                       ! 2 : Ebb generation
               PREV_SWITCH(TRS) = CT               ! Update previous switch
             ENDIF
           CASE (2)  !      2 : Ebb generation
-            IF ((HD.LE.H_END(TRS))                ! Head diff end triggered
+            IF ((ABS(HDI).LE.H_END(TRS))                ! Head diff end triggered
      &      .OR.(PHASETIME(TRS).GT.MAX_GEN(TRS))) THEN   ! Time limit reached
               IF (IS2WAY(TRS)) THEN
                 MODE(TRS) = 3  !      3 : Ebb sluicing
@@ -483,7 +490,7 @@
           CASE (3)  !      3 : Ebb sluicing
 !           HERE WE TAKE A FAIRLY BIG ASSUMPTION ABOUT HOW CLOSE TWO WATER LEVELS NEED
 !           TO BE TO COUNT AS BEING EQUAL, 0.1m MAY NEED SENSITIVITY TESTING
-            IF ((HD.LE.0.1)
+            IF ((ABS(HDI).LE.0.1)
      &      .OR.(PHASETIME(TRS).GT.MAX_SLUICE(TRS))) THEN
               IF (ISPUMPING(TRS).AND.IS2WAY(TRS)) THEN
                 MODE(TRS) = -1 !     -1 : Ebb pumping
@@ -504,26 +511,26 @@
             ENDIF
           CASE (4)  !      4 : Low water holding
             IF (IS2WAY(TRS)) THEN
-              IF ((HD.GE.H_START(TRS))
+              IF ((HDMIN.GE.H_START(TRS))
      &      .OR.(PHASETIME(TRS).GT.MAX_HOLD(TRS))) THEN
                 MODE(TRS) = 5 !      5 : Flood generation
                 PREV_SWITCH(TRS) = CT
               ENDIF
             ELSE !      5 : Flood generation
-              IF((HEADDIFF(TRS).GT.0.1)
+              IF((HDI.GT.0.1)
      &      .OR.(PHASETIME(TRS).GT.MAX_HOLD(TRS))) THEN
                 MODE(TRS)= 6  !      6 : Flood sluicing
                 PREV_SWITCH(TRS) = CT
               ENDIF
             ENDIF
           CASE (5)  !      5 : Flood generation
-            IF ((HD.LE.H_END(TRS))
+            IF ((ABS(HDI).LE.H_END(TRS))
      &      .OR.(PHASETIME(TRS).GT.MAX_HOLD(TRS))) THEN
-              MODE(TRS) = 2  !      2 : Ebb generation
+              MODE(TRS) = 6  !      2 : Ebb generation
               PREV_SWITCH(TRS) = CT
             ENDIF
           CASE (6)  !      6 : Flood sluicing
-            IF ((HD.LE.0.1)
+            IF ((ABS(HDI).LE.0.1)
      &      .OR.(PHASETIME(TRS).GT.MAX_SLUICE(TRS))) THEN
               IF (ISPUMPING(TRS)) THEN
                 MODE(TRS) = -2 !     -2 : FLood pumping
@@ -1122,13 +1129,9 @@
               ENDDO
               IF (IPID.EQ.0) THEN
                 DO K=1,N_FLEX(TRS)
-                  WRITE(*,'(I5 F8.2 F8.2 F8.2 I8 F8.2 I5)')
-     &              K,
-     &              FLEX_TIMES(K,TRS),
-     &              H_STARTS(K,TRS),
-     &              H_ENDS(K,TRS),
-     &              TURB_CHARTS(K,TRS),
-     &              PUMP_TARGS(K,TRS),
+                  WRITE(*,'(I5,3F8.2,I8,F8.2,I5)') K,
+     &              FLEX_TIMES(K,TRS),H_STARTS(K,TRS),H_ENDS(K,TRS),
+     &              TURB_CHARTS(K,TRS),PUMP_TARGS(K,TRS),
      &              PUMP_CHARTS(K,TRS)
                 ENDDO
               ENDIF
@@ -1199,9 +1202,9 @@
           ENDIF
 
           OPEN(OF_TRS,FILE=TRS_FNAME,STATUS='REPLACE',IOSTAT=STAT)
-          WRITE(OF_TRS,*)'TIME(hr),Z_OUT(mD),Z_IN(mD),HEADDIFF(m),',
-     &      'MODE(-),Q_TURB(m3_s),Q_SLUICE(m3_s),POWER(MW),',
-     &      'T_CHART(-),P_CHART(-),H_START(m),H_END(m),P_TARG(-)'
+          WRITE(OF_TRS,'(A137)')'TIME(hr),Z_OUT(mD),Z_IN(mD),HEADDIFF(m)
+     &,MODE(-),Q_TURB(m3_s),Q_SLUICE(m3_s),POWER(MW),T_CHART(-),P_CHART
+     &(-),H_START(m),H_END(m),P_TARG(-)'
           CLOSE(OF_TRS)
         ENDDO
         RESULTS_FIRST = .FALSE.
@@ -1219,14 +1222,16 @@
 
         OPEN(OF_TRS,FILE=TRS_FNAME,STATUS='OLD',
      &         ACCESS='APPEND',IOSTAT=STAT)
-        WRITE(OF_TRS,*)TRS_TIME,A,
+        WRITE(OF_TRS,
+     &'(4(F13.3,A1),I2,A1,3(F13.3,A1),2(I2,A1),3(F13.3,A1))')
+     &    TRS_TIME,A,
      &    WL_OUT(TRS),A,WL_IN(TRS),A,HEADDIFF(TRS),A,MODE(TRS),A,
      &    Q_TURB(TRS),A,Q_SLUICE(TRS),A,POWER(TRS),A,TURB_CHART(TRS),A,
      &    PUMP_CHART(TRS),A,H_START(TRS),A,H_END(TRS),A,PUMP_TARG(TRS)
         CLOSE(OF_TRS)
       ENDDO
       END SUBROUTINE TRS_WRITE_RESULTS
-!
+!      
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 !     Write the next row of the output CSV
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1237,10 +1242,10 @@
       INTEGER :: TRS
       CHARACTER(len = 40) :: FF,II,F,FI
 
-      FF = '(A20 F10.3 A20 F10.3)' ! float float
-      II = '(A20 I10 A20 I8)'     ! int int
-      FI = '(A20 F10.3 A20 I10)'
-      F  = '(A20 F10.3)'
+      FF = '(A20,F10.3,A20,F10.3)' ! float float
+      II = '(A20,I10,A20,I8)'     ! int int
+      FI = '(A20,F10.3,A20,I10)'
+      F  = '(A20,F10.3)'
       DO TRS = 1,NUM_TRS
       IF (TRS.EQ.1) THEN
       WRITE(*,*) '+++++++++++++++++++++++++++++++++++++++++++++++++++',
@@ -1264,7 +1269,7 @@
         ! Sluice flows calculated with orifice equation.
         IF(.NOT.ALLOCATED(QG_BASE)) THEN
           ALLOCATE(QG_BASE(NUM_TRS))
-          WRITE(*,*)'ALLOCATION WARNING',NUM_TRS
+          WRITE(*,*)'ALLOCATION WARNING ',NUM_TRS
         ENDIF
 
       DO TRS = 1,NUM_TRS
@@ -1280,6 +1285,13 @@
      &    FLOW_P(TRS,:,PUMP_CHART(TRS)))
 
       ENDDO
+      ! SUBROUTINE TRS_PRINT_HILLCHART(HEADS,ARRAY,KWRD,VRBL)
+    !   IF (TRS_DEBUG) THEN
+    !     CALL TRS_PRINT_HILLCHART(HEAD_G(13,:),
+    !  & FLOW_G(13,:,:),' TEST ',' CHART(13)')
+    !     TRS_DEBUG = .FALSE.
+    !   ENDIF
+
       END SUBROUTINE TRS_BASE_FLOWS
 
       ! SUBROUTINE TRS_COLLATE_FLOWS(DBUS,CTRASH,CLPBUS)

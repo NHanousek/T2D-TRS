@@ -108,7 +108,7 @@
       USE INTERFACE_PARALLEL, ONLY : P_MAX,P_MIN
       ! TO HAVE ACCESS TO LOGICAL UNITS OF FILES !culverts, TRS, Output
       USE DECLARATIONS_TELEMAC2D, ONLY:
-     &  T2D_FILES,T2DFO1,T2DFO2,T2DRFO,AT,AABUS
+     &  T2D_FILES,T2DFO1,T2DFO2,T2DRFO,AT,AABUS,PRIVE
       USE TRS_T2D
       IMPLICIT NONE
 !
@@ -173,14 +173,8 @@
       CTH = AT/3600.0         ! Current time in hours, starts from 0
 !
 !-----------------------------------------------------------------------
-!
-! Initialise the tidal range schemes if they are included
-
-
+! Initialise the tidal range schemes if they are included (moved to LECBUS)
 !-----------------------------------------------------------------------
-! LOOP OVER THE CULVERTS
-!
-! DEFAULT OPERATION
       ! INITIALISE TRS
       IF (MAXVAL(CLPBUS).GT.3) THEN
         ! Set the flex values
@@ -193,9 +187,17 @@
           SUM_IN = 0.0
           SUM_OUT = 0.0
           SUM_W = 0.0
+
           Q_TURB(TRS) = 0.0
           Q_SLUICE(TRS) = 0.0
           POWER(TRS) = 0.0
+
+          IF (NCSIZE.GT.1) THEN
+            TMP_DOUBLE = P_MIN(Q_TURB(TRS))
+            TMP_DOUBLE = P_MIN(Q_SLUICE(TRS))
+            TMP_DOUBLE = P_MIN(POWER(TRS))
+          ENDIF
+
           DO K=1,NBUSE
             IF(CTRASH(K).EQ.TRS) THEN
               IN=ENTBUS(K)
@@ -228,18 +230,26 @@
           WL_IN(TRS) = SUM_IN/SUM_W
           WL_OUT(TRS)= SUM_OUT/SUM_W
           IF (SUM_W.EQ.0) THEN
-            WRITE(*,*)'!!!!!! WARNING SUM_W = 0 !!!!!!!!!!!!!!!'
+            WRITE(*,*)'!! WARNING SUM_W = 0 !!'
           ENDIF
-          HEADDIFF(TRS) = WL_IN(TRS) - WL_OUT(TRS)
+            HEADDIFF(TRS) = (1.D0 - RELAXB)*HEADDIFF(TRS) + 
+     &    RELAXB*(WL_IN(TRS) - WL_OUT(TRS))
+    !     HEADDIFF(TRS) = WL_IN(TRS) - WL_OUT(TRS)
     !       WRITE(*,*)'TRS: ',TRS,' SUM_W: '
     !  &    ,SUM_W,' HEADDIFF: ',HEADDIFF(TRS)
         ENDDO
         ! Set a new mode
         CALL TRS_NEW_MODE(CTH)
         CALL TRS_BASE_FLOWS()
+        ! IF (ENTET.AND.(IPID.EQ.0)) THEN
+        !   DO I = 1,5
+        !     WRITE(*,*)'QG_BASE(',I,') = ',QG_BASE(I)
+        !   ENDDO
+        ! ENDIF
         ! WRITE(*,*)
       ENDIF
 
+!     LOOP OVER CULVERTS
       DO N=1,NBUSE
 !       IDENTIFIES ENTRY / EXIT NODES
 !
@@ -253,20 +263,21 @@
 !       LOADS, TAKEN AS FREE SURFACE ELEVATION
 !
         IF(I1.GT.0) THEN
-          S1=H(I1)+ZF(I1)
-          QMAX1=0.9D0*H(I1)*V2DPAR%R(I1)/DT
+            S1=H(I1)+ZF(I1)
+            QMAX1=H(I1)*V2DPAR%R(I1)/DT
         ELSE
           S1=0.D0
           QMAX1=0.D0
         ENDIF
-
+        ! IF (QMAX1.LT.0.D0) QMAX1 = 0.D0
         IF(I2.GT.0) THEN
-          S2=H(I2)+ZF(I2)
-          QMAX2=0.9D0*H(I2)*V2DPAR%R(I2)/DT
+            S2=H(I2)+ZF(I2)
+            QMAX2=H(I2)*V2DPAR%R(I2)/DT
         ELSE
           S2=0.D0
           QMAX2=0.D0
         ENDIF
+        ! IF (QMAX2.LT.0.D0) QMAX2 = 0.D0
 !       CASE WHERE ONE OF THE ENDS IS NOT IN THE SUB-DOMAIN
         IF(NCSIZE.GT.1) THEN
           S1=P_MAX(S1)+P_MIN(S1)  ! WATER LEVEL @ INSIDE NODE
@@ -274,6 +285,10 @@
           QMAX1=P_MAX(QMAX1)+P_MIN(QMAX1)
           QMAX2=P_MAX(QMAX2)+P_MIN(QMAX2)
         ENDIF
+
+        ! IF (ENTET.AND.(IPID.EQ.0).AND.(CTRASH(N).EQ.5)) THEN
+        !   WRITE(*,*)'QMAX1(',N,') = ',QMAX1,' QMAX2(',N,') = ',QMAX2
+        ! ENDIF
 !
 !       COEFFICIENTS FOR COMPUTATION OF PRESSURE LOSS
 !
@@ -306,7 +321,7 @@
         CLPB=CLPBUS(N)    ! TRS -> Flow control type. Culvert type: 4 = control, 5 = Turbine, 6 = Sluice, [0,1,2,3] as before
 
 !       COMPUTES FLOWS BASED ON THE TIDAL RANGE SCHEME ASSUMPTIONS
-        IF (CLPB.GE.5) THEN
+        IF (CLPB.GE.4) THEN
           TRS = INT(TRASH)
           Q = 0.0 ! FLOW THROUGH THIS CULVERT
           !       NEED TO CHECK IF IN/OUT WORKS WITH THE REST OF THE CODE
@@ -326,20 +341,22 @@
 !       FLOW CALCS
 !       MAX VOLUME CHANGE CHECKS
 !       USE THE LOCAL COEFFS WHERE POSSIBLE
-          TRS = TRASH ! Haha.
+          ! TRS = TRASH ! Haha.
           SELECT CASE (CLPB)
           CASE(4) ! Control point
             Q = 0.0 ! no flow, ever
 
           CASE(5) ! Turbine
-            T_AREA = 0.25*PI*LARG*LARG        ! Turbine area (m2)
-            T_SF = (LARG**2)/(ORIG_DIAM_T(TRS)**2)*CORR5 ! Turbine scale factor
+            T_AREA = 0.25*PI*LARG*LARG*CORR5        ! combined Turbine area (m2)
+            T_SF = CORR5*(LARG**2)/(ORIG_DIAM_T(TRS)**2) ! Turbine scale factor
+
             ! Ramp * Scale Factor * Flow
             SELECT CASE (MODE(TRS))
               CASE (0)  ! Initial warmup
+              ! WRITE(*,*)'SCALE FACTOR: ',T_SF
               !DOUBLE PRECISION FUNCTION TRS_ORIFICE(CD,AREA,HDIFF) RESULT(FLOW)
                 Q = TRS_RAMP(FLEX_TIMES(1,TRS),PHASETIME(TRS))*
-     &            TRS_ORIFICE(CE1,T_AREA,HEADDIFF(TRS))*T_SF
+     &            TRS_ORIFICE(WARMUP(TRS),T_AREA,HEADDIFF(TRS))*T_SF
 
               CASE (1)  ! High water hold
                 ! Ramp down turbine flow if appropriate
@@ -347,7 +364,7 @@
                   IF ((ISPUMPING(TRS)).AND.
      &               ((CORRV5.EQ.1).OR.(CORRV5.EQ.3))) THEN
                     ! ramp down pump flow
-                    Q = (1.0 - RAMP(TRS))*QP_BASE(TRS)*T_SF*CS2
+                    Q = -(1.0 - RAMP(TRS))*QP_BASE(TRS)*T_SF*CS2
                   ELSE
                     ! If parallel sluice
                     IF(CORR56.EQ.1) THEN
@@ -363,6 +380,9 @@
 
               CASE (2)  ! Ebb generation
                 Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CE1 ! Normal flow
+                IF(ENTET.AND.(IPID.EQ.0).AND.(TRS.EQ.1)) THEN
+                  WRITE(*,*) 'Init Q(',N,') = ', Q
+                ENDIF
 
               CASE (3)  ! Ebb sluicing
                 IF (CORR56.EQ.1) THEN
@@ -374,7 +394,7 @@
 
               CASE (-1) ! Ebb pumping
                 IF ((CORRV5.EQ.1).OR.(CORRV5.EQ.3)) THEN
-                  Q = RAMP(TRS)*QP_BASE(TRS)*T_SF*CS1
+                  Q = -RAMP(TRS)*QP_BASE(TRS)*T_SF*CS1
                 ENDIF
 
               CASE (4)  ! Low water hold
@@ -382,7 +402,7 @@
               IF (PHASETIME(TRS).LT.RAMPTIME(TRS)) THEN
                 IF ((ISPUMPING(TRS)).AND.
      &              ((CORRV5.EQ.1).OR.(CORRV5.EQ.3))) THEN
-                  Q = (1.0 - RAMP(TRS))*QP_BASE(TRS)*T_SF*CS1
+                  Q = -(1.0 - RAMP(TRS))*QP_BASE(TRS)*T_SF*CS1
                 ELSE
                   IF(CORR56.EQ.1) THEN
                     Q = (1.0 - RAMP(TRS))*QG_BASE(TRS)*T_SF*CE1
@@ -397,11 +417,14 @@
 
               CASE (5)  ! Flood generation
                 Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CE2
+                IF(ENTET.AND.(IPID.EQ.0).AND.(TRS.EQ.1)) THEN
+                  WRITE(*,*) 'Init Q(',N,') = ', Q
+                ENDIF
 
               CASE (6)  ! Flood sluicing
                 ! If parallel sluicing (and thus generating)
                 IF (CORR56.EQ.1) THEN
-                  Q = QG_BASE(TRS)*T_SF*CE2
+                  Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CE2
                 ELSE
                   ! Turbine operates as sluice
                   Q = TRS_ORIFICE(CE2,T_AREA,HEADDIFF(TRS))
@@ -410,7 +433,7 @@
 
 
               CASE (-2) ! Flood pumping
-                Q = RAMP(TRS)*QG_BASE(TRS)*T_SF*CS2
+                Q = -RAMP(TRS)*QP_BASE(TRS)*T_SF*CS2
 
               CASE DEFAULT ! Error
               WRITE(*,*)'SOME KIND OF TRS MODE ERROR IN TURB FLOW CALC'
@@ -442,14 +465,19 @@
               ! You can add more area calc options here if desired
               ! ASSUME SQUARE
               S_AREA = LARG*LARG
-            ENDIF
-
+            ENDIF ! End sluice area
+            S_AREA = RD1 ! This is a bit shit but it is consistent with Bins model so I hope it at least works.
+            
             ! Orifice equation correctly constructed.
             SELECT CASE (MODE(TRS))
               CASE (0)  ! Initial warmup, slow ramp up to get motion etc.
-                Q = RAMP(TRS)*
+                Q = TRS_RAMP(FLEX_TIMES(1,TRS),PHASETIME(TRS))*
      &            TRS_ORIFICE(WARMUP(TRS),S_AREA,HEADDIFF(TRS))
-
+                ! IF (IPID.EQ.0) THEN
+                !   IF (ENTET) THEN
+                !     ! WRITE(*,*) 'N: ',N,' S_AREA: ',S_AREA
+                !   ENDIF
+                ! ENDIF
               CASE (1)  ! High water hold
                 ! Ramp down as the sluices close
                 IF (PHASETIME(TRS).LT.RAMPTIME(TRS)) THEN
@@ -510,16 +538,74 @@
               ! Culvert operates as usual, copy the normal buse functionality into here?
             ENDIF
           END SELECT
+        ! IF (ENTET.AND.(IPID.EQ.0).AND.(TRS.EQ.5)) THEN
+        !   WRITE(*,*)'LINE: 524 DBUS(',N,') = ',DBUS(N)
+        ! ENDIF
         ! Apply the calculated flow to the culvert with relaxation
         DBUS(N)= (1.D0-RELAXB)*DBUS(N) + RELAXB*Q
-
-!       LIMITATION ON AVAILABLE WATER
-!       Same as prior
-        IF(DBUS(N).GT.0.D0) THEN
-          DBUS(N)=MIN(QMAX1,DBUS(N))
-        ELSE
-          DBUS(N)=MAX(-QMAX2,DBUS(N))
+        IF(ENTET.AND.(IPID.EQ.0).AND.(N.EQ.1).AND.
+     &    ((MODE(TRS).EQ.2).OR.MODE(TRS).EQ.5)) THEN
+          WRITE(*,*) 'RLX Q(',N,') = ', Q
         ENDIF
+        ! IF (ENTET.AND.(IPID.EQ.0).AND.(TRS.EQ.5)) THEN
+        !   WRITE(*,*)'LINE: 530 DBUS(',N,') = ',DBUS(N)
+        ! ENDIF
+
+        ! LIMITATION ON AVAILABLE WATER
+        ! This is causing a huge discontinuity in the fucking model.
+        ! Or interracting with one...
+        ! Same as prior
+        ! Does it go the wrong way around???
+        ! ORIGINAL FUNCTIONAL FORM
+        ! IF(DBUS(N).GT.0.D0) THEN
+        !   IF (QMAX1.GT.0.D0) DBUS(N)=MIN(0.5*QMAX1,DBUS(N))
+        ! ELSE
+        !   IF (QMAX2.GT.0.D0) DBUS(N)=MAX(-0.5*QMAX2,DBUS(N))
+        ! ENDIF
+        ! MODIFIED FORM 1
+        ! IF(DBUS(N).GT.0.D0) THEN
+        ! IF (QMAX1.GT.0.D0) DBUS(N)=MIN(0.5*QMAX1,DBUS(N),0.5*QMAX2)
+        ! ELSE
+        ! IF (QMAX2.GT.0.D0) DBUS(N)=MAX(-0.5*QMAX2,DBUS(N),-0.5*QMAX1)
+        ! ENDIF
+        
+        ! MODIFIED FORM 2
+        ! IF(DBUS(N).GT.0.D0) THEN
+        !   IF ((QMAX1.GT.0.D0).AND.(QMAX2.GT.0.D0)) THEN 
+        !     DBUS(N)=MIN(0.5*QMAX1,DBUS(N),0.5*QMAX2)
+        !   ENDIF
+        ! ELSE
+        !   IF ((QMAX1.GT.0.D0).AND.(QMAX2.GT.0.D0)) THEN 
+        !     DBUS(N)=MAX(-0.5*QMAX2,DBUS(N),-0.5*QMAX1)
+        !   ENDIF
+        ! ENDIF
+
+        ! FORM 3 - This one is the best so far, still a little shaky
+        IF(DBUS(N).GT.0.D0) THEN
+          IF ((QMAX1.GT.0.D0).AND.(QMAX2.GT.0.D0)) THEN 
+            DBUS(N)=MIN(QMAX1,DBUS(N),QMAX2)
+          ELSEIF(QMAX1.GT.0.D0) THEN
+            DBUS(N) = MIN(DBUS(N),QMAX1)
+          ELSEIF(QMAX2.GT.0.D0) THEN
+            DBUS(N) = MIN(DBUS(N),QMAX2)
+          ENDIF
+        ELSE
+          IF ((QMAX1.GT.0.D0).AND.(QMAX2.GT.0.D0)) THEN 
+            DBUS(N)=MAX(-QMAX2,DBUS(N),-QMAX1)
+          ELSEIF(QMAX1.GT.0.D0) THEN
+            DBUS(N) = MAX(DBUS(N),-QMAX1)
+          ELSEIF(QMAX2.GT.0.D0) THEN
+            DBUS(N) = MAX(DBUS(N),-QMAX2)
+          ENDIF
+        ENDIF ! End QMax check
+
+        IF(ENTET.AND.(IPID.EQ.0).AND.(N.EQ.1).AND.
+     &    ((MODE(TRS).EQ.2).OR.MODE(TRS).EQ.5)) THEN
+          WRITE(*,*) 'QMX Q(',N,') = ', Q
+        ENDIF
+        ! IF (ENTET.AND.(IPID.EQ.0).AND.(TRS.EQ.5)) THEN
+        !   WRITE(*,*)'LINE: 541 DBUS(',N,') = ',DBUS(N)
+        ! ENDIF
 !       LIMITATION ON WATER LEVEL SHUTOFF
 !       USES NODAL WATER LEVEL
         IF ((HAUT1.GE.S1).OR.(HAUT2.GE.S2)) THEN
@@ -539,28 +625,35 @@
 !      6 : Flood sluicing,                        HD ~= 0.0
 !     -2 : FLood pumping,                         WL_IN <= PUMP_TARG
 !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-        IF (ENTET) THEN
+        IF (ENTET) THEN ! If its a print period
           CALL TRS_POWER(HEADDIFF(TRS),T_SF,TRS,CLPB,CORR56,CORRV5)
-          ! CALL TRS_POWER(DBUS(N),T_SF,TRS,CLPB,CORR56,CORRV5)
           CALL TRS_FLOW(DBUS(N),TRS,CLPB)
-        ENDIF
-
+        ENDIF ! End print
 !       FLOW VELOCITY CALCS
-        IF(DBUS(N).GT.0.D0) THEN
-
-          UBUS(2,N) = (COS(D2)*DBUS(N)/RD2)*COS(ANGBUS(N,2))
-          VBUS(2,N) = (COS(D2)*DBUS(N)/RD2)*SIN(ANGBUS(N,2))
-
+        
+        IF(DBUS(N).GT.0.D0) THEN ! vel calc
+          UBUS(2,N) = -(DBUS(N)/RD2) * COS(ANGBUS(N,2))
+          VBUS(2,N) = -(DBUS(N)/RD2) * SIN(ANGBUS(N,2))
+          IF(I1.GT.0) THEN
+            IF (PRESENT(KSCE)) THEN
+              VOFFSET = (KSCE(NPTSCE+N)-1)*NPOIN2
+            ELSE
+              VOFFSET = 0
+            ENDIF
+            UBUS(1,N) = U(I1+VOFFSET)
+            VBUS(1,N) = V(I1+VOFFSET)
+          ELSE
+            UBUS(1,N) = 0.D0
+            VBUS(1,N) = 0.D0
+          ENDIF
           IF(NCSIZE.GT.1) THEN
             UBUS(1,N) = P_MAX(UBUS(1,N))+P_MIN(UBUS(1,N))
             VBUS(1,N) = P_MAX(VBUS(1,N))+P_MIN(VBUS(1,N))
           ENDIF
-
         ELSEIF(DBUS(N).LT.0.D0) THEN
-          UBUS(1,N) = (COS(D1)*DBUS(N)/RD1)*COS(ANGBUS(N,1))
-          VBUS(1,N) = (COS(D1)*DBUS(N)/RD1)*SIN(ANGBUS(N,1))
+          UBUS(1,N) = -(DBUS(N)/RD1) * COS(ANGBUS(N,1))
+          VBUS(1,N) = -(DBUS(N)/RD1) * SIN(ANGBUS(N,1))
           IF(I2.GT.0) THEN
-            ! NO CLUE WHAT KSCE IS OR DOES...
             IF (PRESENT(KSCE)) THEN
               VOFFSET = (KSCE(NPTSCE+NBUSE+N)-1)*NPOIN2
             ELSE
@@ -576,7 +669,6 @@
             UBUS(2,N) = P_MAX(UBUS(2,N))+P_MIN(UBUS(2,N))
             VBUS(2,N) = P_MAX(VBUS(2,N))+P_MIN(VBUS(2,N))
           ENDIF
-
         ELSEIF(DBUS(N).EQ.0.D0) THEN
           UBUS(1,N) = 0.D0
           VBUS(1,N) = 0.D0
@@ -588,355 +680,338 @@
             UBUS(2,N) = P_MAX(UBUS(2,N))+P_MIN(UBUS(2,N))
             VBUS(2,N) = P_MAX(VBUS(2,N))+P_MIN(VBUS(2,N))
           ENDIF
-        ENDIF
+        ENDIF ! End of vel
+        IF (CLPB.EQ.4) THEN
+          DBUS(N) = 0.D0
+        ENDIF ! End velocity
 
-        ELSE
-!       ORGINAL BUSE FORMULATION
-!
-!       COMPUTES THE FLOW ACCORDING TO DELTAH
-!       IF THE LINEAR PRESSURE LOSS IS NEGLIGIBLE, COULD HAVE DIFFERENT
-!       ENTRY / EXIT SECTIONS
-!
-!       FIRST OPTION FOR CULVERTS: WORKS ONLY WITH CIRCULAR ONES
-        IF(OPTBUSE.EQ.1) THEN
-!
-          IF(S1.GE.S2) THEN
-!
-            IF(S1.GT.RD1.AND.S1.GT.RD2) THEN
-!
-              IF(S1.LT.(RD1+H1).AND.S1.LT.(RD2+H2)) THEN
-!             FREE SURFACE FLOW WHICH FOLLOWS A WEIR LAW
-                IF(S2.GT.(TWOTHIRDS*(S1-RD))+RD) THEN
-                  IF(CIR.GT.0.D0) THEN
+      ELSE ! i think it all goes wrong below here...
+      ! ORGINAL BUSE FORMULATION
+      ! COMPUTES THE FLOW ACCORDING TO DELTAH
+      ! IF THE LINEAR PRESSURE LOSS IS NEGLIGIBLE, COULD HAVE DIFFERENT
+      ! ENTRY / EXIT SECTIONS
+      ! FIRST OPTION FOR CULVERTS: WORKS ONLY WITH CIRCULAR ONES
+        IF(OPTBUSE.EQ.1) THEN ! 1
+          IF(S1.GE.S2) THEN ! 2
+            IF(S1.GT.RD1.AND.S1.GT.RD2) THEN ! 3
+              IF(S1.LT.(RD1+H1).AND.S1.LT.(RD2+H2)) THEN ! 4
+              !  FREE SURFACE FLOW WHICH FOLLOWS A WEIR LAW
+                IF(S2.GT.(TWOTHIRDS*(S1-RD))+RD) THEN ! 5
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*0.5D0*RADI2*(S2-RD2)
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*(S2-RD2)
-                  ENDIF
+                  ENDIF !6
                   Q = SECBUS(N)*SQRT(2.D0*GRAV*(S1-S2)/(CE1+L+CS2))
-                ELSE
-                  IF(CIR.GT.0.D0) THEN
+                ELSE ! 5
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*0.5D0*RADI1*(S1-RD1)
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*(S1-RD1)
-                  ENDIF
+                  ENDIF ! 6
                   Q = SECBUS(N)*SQRT(2.D0*GRAV)*SQRT((S1-RD1))*0.385D0
-                ENDIF
-              ELSE
-!               PRESSURE FLOW --> ORIFICE LAW
-                IF(CIR.GT.0.D0) THEN
+                ENDIF ! 5
+              ELSE ! 4
+                ! PRESSURE FLOW --> ORIFICE LAW
+                IF(CIR.GT.0.D0) THEN ! 5
                   SECBUS(N) = PI*RADI1**2.D0
-                ELSE
+                ELSE ! 5
                   SECBUS(N) = LARG*HAUT1
-                ENDIF
-                IF(S1.GE.(RD1+H1).AND.S2.LT.(RD2+H2)) THEN
+                ENDIF ! 5
+                IF(S1.GE.(RD1+H1).AND.S2.LT.(RD2+H2)) THEN ! 5
                   Q = SECBUS(N)*SQRT(2.D0*GRAV*(S1-(RD2+H2))
      &              /(1.D0+CE1+L))
-                ELSE
+                ELSE ! 5
                   Q = SECBUS(N)*SQRT(2.D0*GRAV*(S1-S2)/(L+CS2+CE1))
-                ENDIF
-              ENDIF
-            ELSE
+                ENDIF ! 5
+              ENDIF ! 4
+            ELSE ! 3
               Q = 0.D0
-            ENDIF
-!
-          ELSE
-!
-            IF(S2.GT.RD1.AND.S2.GT.RD2) THEN
-
-              IF(S2.LT.(RD1+H1).AND.S2.LT.(RD2+H2)) THEN
-!               FREE SURFACE FLOW WHICH FOLLOWS A WEIR LAW
-                IF(S1.GT.(TWOTHIRDS*(S2-RD1)+RD1)) THEN
-                  IF(CIR.GT.0.D0) THEN
+            ENDIF ! 3
+          ELSE ! 2
+            IF(S2.GT.RD1.AND.S2.GT.RD2) THEN ! 3
+              IF(S2.LT.(RD1+H1).AND.S2.LT.(RD2+H2)) THEN ! 4
+              ! FREE SURFACE FLOW WHICH FOLLOWS A WEIR LAW
+                IF(S1.GT.(TWOTHIRDS*(S2-RD1)+RD1)) THEN ! 5
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*0.5D0*RADI1*(S1-RD1)
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*(S1-RD1)
-                  ENDIF
+                  ENDIF ! 6
                   Q = -SECBUS(N)*SQRT(2.D0*GRAV*(S2-S1)/(CE2+L+CS1))
-                ELSE
-                  IF(CIR.GT.0.D0) THEN
+                ELSE ! 5
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*0.5D0*RADI1*(S2-RD2)
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*(S2-RD2)
-                  ENDIF
+                  ENDIF ! 6
                   Q = -SECBUS(N)*SQRT(2.D0*GRAV)*SQRT((S2-RD2))*0.385D0
-                ENDIF
-              ELSE
-!               PRESSURE FLOW --> ORIFICE LAW
-                IF(CIR.GT.0.D0) THEN
+                ENDIF ! 5
+              ELSE  ! 4
+                ! PRESSURE FLOW --> ORIFICE LAW
+                IF(CIR.GT.0.D0) THEN ! 5
                   SECBUS(N) = PI*RADI1**2.D0
-                ELSE
+                ELSE  ! 5
                   SECBUS(N) = LARG*HAUT1
-                ENDIF
-                IF(S2.GE.(RD2+H2).AND.S1.LT.(RD1+H1)) THEN
+                ENDIF ! 5
+                IF(S2.GE.(RD2+H2).AND.S1.LT.(RD1+H1)) THEN  ! 5
                   Q = -SECBUS(N)*SQRT(2.D0*GRAV*(S2-(RD1+H1))
      &              /(1.D0+CE2+L))
-                ELSE
+                ELSE  ! 5
                   Q = -SECBUS(N)*SQRT(2.D0*GRAV*(S2-S1)/(L+CS1+CE2))
-                ENDIF
-              ENDIF
-            ELSE
+                ENDIF  ! 5
+              ENDIF ! 4
+            ELSE ! 3
               Q=0.D0
-            ENDIF
-          ENDIF
-!
-!       Q IS CALCULATED ACCORDING TO 5 TYPES OF FLOW
-!       CALCULATION OF DISCHARGES BASED ON WATER LEVELS S1 AND S2
-!       EQUATIONS BASED ON BODHAINE (1968) + CARLIER (1976)
-!       IN CASE THE ENTRANCE AND EXIT SURFACE OF THE CULVERT ARE NOT EQUAL
-!       WE ASSUME THAT THE SMALLEST SURFACE WILL LIMIT THE FLOW THROUGH
-!       THE CULVERT. THIS SURFACE IS THUS TAKEN TO CALCULATE THE DISCHARGE
-        ELSEIF(OPTBUSE.EQ.2) THEN
-!
-!         WL CHANNEL HIGHER THAN WL FCA; ONLY INFLOW POSSIBLE
-          IF(S1.GE.S2) THEN
-!           IF WL CHANNEL IS GREATER THAN BOTTOM OF CULVERT THEN ...
-            IF(S1.GT.RD1.AND.S1.GT.RD2) THEN
-!
-!             FREE SURFACE FLOW
-              IF((S1-RD1).LT.1.5D0*H1.AND.S2.LE.(RD2+H2)) THEN
-!
-!               SUBMERGED WEIR - FLOW TYPE 3
-                IF(S2.GT.(TWOTHIRDS*(S1-RD1)+RD2)) THEN
+            ENDIF ! 3
+          ENDIF ! 2
+
+        ! Q IS CALCULATED ACCORDING TO 5 TYPES OF FLOW
+        ! CALCULATION OF DISCHARGES BASED ON WATER LEVELS S1 AND S2
+        ! EQUATIONS BASED ON BODHAINE (1968) + CARLIER (1976)
+        ! IN CASE THE ENTRANCE AND EXIT SURFACE OF THE CULVERT ARE NOT EQUAL
+        ! WE ASSUME THAT THE SMALLEST SURFACE WILL LIMIT THE FLOW THROUGH
+        ! THE CULVERT. THIS SURFACE IS THUS TAKEN TO CALCULATE THE DISCHARGE
+        ELSEIF(OPTBUSE.EQ.2) THEN ! 1
+          ! WL CHANNEL HIGHER THAN WL FCA; ONLY INFLOW POSSIBLE
+          IF(S1.GE.S2) THEN ! 2
+            ! IF WL CHANNEL IS GREATER THAN BOTTOM OF CULVERT THEN ...
+            IF(S1.GT.RD1.AND.S1.GT.RD2) THEN ! 3
+              !  FREE SURFACE FLOW
+              IF((S1-RD1).LT.1.5D0*H1.AND.S2.LE.(RD2+H2)) THEN ! 4
+                ! SUBMERGED WEIR - FLOW TYPE 3
+                IF(S2.GT.(TWOTHIRDS*(S1-RD1)+RD2)) THEN ! 5
                   FTYP=3
                   HAST = 0.5D0*(S1-RD)+0.5D0*(S2-RD)
                   RAYON = HAST*LARG/(2.D0*HAST+LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                   ! FORMULA FOR SECTION OF CIRCLE; HEIGHT IS S2-RD2;
                   ! BUT HERE SUBMERGED THUS CALCULATED WITH
                   ! S2-RD2 AND EQUIVALENT WIDTH
                     SECBUS(N) = PI*0.5D0*RADI2*(S2-RD)
-                  ELSE
+                  ELSE ! 6
                   ! FOR THIS FORMULA THE CROSS SECTION CAN BE
                   ! LARGER THAN THE ACTUAL CROSS SECTION
                     SECBUS(N) = LARG*(S2-RD)
-                  ENDIF
+                  ENDIF ! 6
                   Q=SECBUS(N)*SQRT(2.D0*GRAV*(S1-S2)/(CE1+L+CS2+TRASH))
-!
-!               UNSUBMERGED WEIR - FLOW TYPE 2
-                ELSE !IF(S2.LE.(TWOTHIRDS*(S1-RD)+RD)) THEN
+                ! UNSUBMERGED WEIR - FLOW TYPE 2
+                ELSE !IF(S2.LE.(TWOTHIRDS*(S1-RD)+RD)) THEN  ! 5
                   FTYP=2
                   HAST = 0.5D0*TWOTHIRDS*(S1-RD)+0.5D0*(S1-RD)
                   RAYON = HAST*LARG/(2.D0*HAST+LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                     ! FORMULA FOR SECTION OF CIRCLE; HEIGHT IS S2-RD2
-                    IF((S1-RD1).LT.RADI1) THEN
+                    IF((S1-RD1).LT.RADI1) THEN ! 7
                       TETA = 2.D0*ACOS((RADI1-(S1-RD1))/RADI1)
                       SECBUS(N) = ACOS((RADI1-(S1-RD1))/RADI1)
      &                          *(RADI1**2)- 0.5D0*RADI1*SIN(TETA/2)
      &                          *(RADI1-(S1-RD1))
-                    ELSEIF((S1-RD1).EQ.RADI1) THEN
+                    ELSEIF((S1-RD1).EQ.RADI1) THEN  ! 7
                       SECBUS(N) = PI*(RADI1**2)*0.5D0
-                    ELSEIF((S1-RD1).GT.RADI1
-     &                .AND.(S1-RD1).LT.H1) THEN
+                    ELSEIF((S1-RD1).GT.RADI1  
+     &                .AND.(S1-RD1).LT.H1) THEN ! 7
                       TETA = 2.D0*ACOS(((S1-RD1)-RADI1)/RADI1)
                       SECBUS(N) = (PI*(RADI1**2))-(ACOS(((S1-RD1)-RADI1)
      &                          / RADI1)*(RADI1**2)
      &                          - 0.5D0*RADI1*SIN(TETA/2)
      &                          *((S1-RD1)-RADI1))
-                    ELSEIF((S1-RD1).GE.H1) THEN
+                    ELSEIF((S1-RD1).GE.H1) THEN ! 7
                       SECBUS(N) = PI*(RADI1**2)
-                    ENDIF
-                  ELSE
+                    ENDIF ! 7
+                  ELSE ! 6
                     SECBUS(N) = LARG*(TWOTHIRDS*(S1-RD))
-                  ENDIF
+                  ENDIF ! 6
                   Q = SECBUS(N)
      &               *SQRT(2.D0*GRAV*(S1-(RD+TWOTHIRDS*(S1-RD)))
      &                     /(CE1+L+CS2+TRASH))
-                ENDIF
-!
-!             PRESSURE FLOW --> ORIFICE LAW
-              ELSEIF((S1-RD1).GE.1.5D0*H1.AND.S2.LE.(RD2+H2)) THEN
-!               FLOW TYPE 6
-                IF(LONG.GE.CORR56*HAUT1) THEN
+                ENDIF ! 5
+              ! PRESSURE FLOW --> ORIFICE LAW
+              ELSEIF((S1-RD1).GE.1.5D0*H1.AND.S2.LE.(RD2+H2)) THEN ! 4
+              ! FLOW TYPE 6
+                IF(LONG.GE.CORR56*HAUT1) THEN ! 5
                   FTYP=6
                   HAST = HAUT1
                   RAYON = HAST*LARG/(2.D0*HAST+2.D0*LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN  ! 6
                     SECBUS(N) = PI*RADI1**2
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*HAUT1
-                  ENDIF
+                  ENDIF ! 6
                   Q = SECBUS(N)
      &               *SQRT(2.D0*GRAV*(S1-(RD2+HAUT))/(CE1+L+CS2+TRASH))
-!             FLOW TYPE 5
-                ELSEIF(LONG.LT.CORR56*HAUT1) THEN
+                ! FLOW TYPE 5
+                ELSEIF(LONG.LT.CORR56*HAUT1) THEN ! 5
                   FTYP=5
                   HAST = HAUT1
                   RAYON = HAST*LARG/(2.D0*HAST+2.D0*LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*RADI1**2
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*HAUT1
-                  ENDIF
+                  ENDIF ! 6
                   Q=SECBUS(N)*SQRT(2.D0*GRAV*(S1-RD)/(CORR5*CE1+TRASH))
-                ENDIF
-!           FLOW TYPE 4 SUBMERGED OUTLET
-              ELSEIF(S1.GT.(RD1+H1).AND.S2.GT.(RD2+H2)) THEN
+                ENDIF ! 5
+              ! FLOW TYPE 4 SUBMERGED OUTLET
+              ELSEIF(S1.GT.(RD1+H1).AND.S2.GT.(RD2+H2)) THEN ! 4
                 FTYP=4
                 HAST = HAUT1
                 RAYON = HAST*LARG/(2.D0*HAST+2.D0*LARG)
                 L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                IF(CIR.GT.0.D0) THEN
+                IF(CIR.GT.0.D0) THEN ! 5
                   SECBUS(N) = PI*RADI1**2
-                ELSE
+                ELSE ! 5
                   SECBUS(N) = LARG*HAUT1
-                ENDIF
+                ENDIF ! 5
                 Q = SECBUS(N)*SQRT(2.D0*GRAV*(S1-S2)/(CE1+L+CS2+TRASH))
-              ENDIF
-!           IF WL ON BOTH SIDES IS LOWER THAN THE CULVERT
-            ELSE
+              ENDIF ! 4
+            ! IF WL ON BOTH SIDES IS LOWER THAN THE CULVERT
+            ELSE ! 3
               FTYP=0
               Q=0.D0
-            ENDIF
-!
-!         IF S1 IS SMALLER THAN S2; SO ONLY OUTLET FLOW
-          ELSE
-            IF(S2.GT.RD2.AND.S2.GT.RD1) THEN
-!             FREE SURFACE FLOW
-              IF((S2-RD2).LT.1.5D0*H2.AND.S1.LE.(RD1+H1)) THEN
-!               SUBMERGED WEIR - FLOW TYPE 3
-                IF(S1.GT.(TWOTHIRDS*(S2-RD2)+RD1)) THEN
+            ENDIF ! 3
+          ! IF S1 IS SMALLER THAN S2; SO ONLY OUTLET FLOW
+          ELSE ! 2
+            IF(S2.GT.RD2.AND.S2.GT.RD1) THEN ! 3
+            ! FREE SURFACE FLOW
+              IF((S2-RD2).LT.1.5D0*H2.AND.S1.LE.(RD1+H1)) THEN ! 4
+              ! SUBMERGED WEIR - FLOW TYPE 3
+                IF(S1.GT.(TWOTHIRDS*(S2-RD2)+RD1)) THEN ! 5
                   FTYP=-3
                   HAST = 0.5D0*(S2-RD)+0.5D0*(S1-RD)
                   RAYON = HAST*LARG/(2.D0*HAST+LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                     ! FORMULA FOR SECTION OF CIRCLE; HEIGHT IS S2-RD2
                     SECBUS(N) = PI*0.5D0*RADI1*(S1-RD)
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*(S1-RD)
-                  ENDIF
+                  ENDIF ! 6
                   Q = -SECBUS(N)
      &                *SQRT(2.D0*GRAV*(S2-S1)/(CE2+L+VALVE+CS1+TRASH))
-!               UNSUBMERGED WEIR - FLOW TYPE 2
-                ELSE !IF(S1.LE.(TWOTHIRDS*(S2-RD)+RD)) THEN
+                ! UNSUBMERGED WEIR - FLOW TYPE 2
+                ELSE !IF(S1.LE.(TWOTHIRDS*(S2-RD)+RD)) THEN ! 5
                   FTYP=-2
                   HAST = 0.5D0*TWOTHIRDS*(S2-RD)+0.5D0*(S2-RD)
                   RAYON = HAST*LARG/(2.D0*HAST+LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                     ! FORMULA FOR SECTION OF CIRCLE; HEIGHT IS S2-RD2
-                    IF((S2-RD2).LT.RADI2) THEN
+                    IF((S2-RD2).LT.RADI2) THEN ! 7
                       TETA = 2.D0*ACOS((RADI2-(S2-RD2))/RADI2)
                       SECBUS(N) = ACOS((RADI2-(S2-RD2))/RADI2)
      &                          *(RADI2**2)- (0.5D0*RADI2*SIN(TETA/2)
      &                          *(RADI2-(S2-RD2)))
-                    ELSEIF((S2-RD2).EQ.RADI2) THEN
+                    ELSEIF((S2-RD2).EQ.RADI2) THEN ! 7
                       SECBUS(N) = PI*(RADI2**2)*0.5D0
                     ELSEIF((S2-RD2).GT.RADI2
-     &                .AND.(S2-RD2).LT.H2) THEN
+     &                .AND.(S2-RD2).LT.H2) THEN ! 7
                       TETA = 2.D0*ACOS(((S2-RD2)-RADI2)/RADI2)
                       SECBUS(N) = (PI*(RADI2**2))-(ACOS(((S2-RD2)-RADI2)
      &                          / RADI2)*(RADI2**2)- 0.5D0*RADI2
      &                          *SIN(TETA/2)*((S2-RD2)-RADI2))
-                    ELSEIF((S2-RD2).GE.H2) THEN
+                    ELSEIF((S2-RD2).GE.H2) THEN ! 7
                       SECBUS(N) = PI*(RADI2**2)
-                    ENDIF
-                  ELSE
+                    ENDIF ! 7
+                  ELSE ! 6
                     SECBUS(N) = LARG*TWOTHIRDS*(S2-RD)
-                  ENDIF
+                  ENDIF ! 6
                   Q = -SECBUS(N)
      &                *SQRT(2.D0*GRAV*(S2-(RD+TWOTHIRDS*(S2-RD)))
      &                               /(CE2+VALVE+L+CS1+TRASH))
-                ENDIF
-!             PRESSURE FLOW --> ORIFICE LAW
-              ELSEIF((S2-RD2).GE.1.5D0*H2.AND.S1.LE.(RD1+H1)) THEN
-!               FLOW TYPE 6
-                IF(LONG.GE.CORR56*HAUT2) THEN
+                ENDIF ! 5
+              ! PRESSURE FLOW --> ORIFICE LAW
+              ELSEIF((S2-RD2).GE.1.5D0*H2.AND.S1.LE.(RD1+H1)) THEN ! 4
+                ! FLOW TYPE 6
+                IF(LONG.GE.CORR56*HAUT2) THEN ! 5
                   FTYP=-6
                   HAST = HAUT2
                   RAYON = HAST*LARG/(2.D0*HAST+2.D0*LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*RADI2**2
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*HAUT2
-                  ENDIF
+                  ENDIF ! 6
                   Q = -SECBUS(N)*SQRT(2.D0*GRAV*(S2-(RD1+HAUT))
      &                                         /(CE2+VALVE+L+CS1+TRASH))
-!                 FLOW TYPE 5
-                ELSEIF(LONG.LT.CORR56*HAUT2) THEN
+                ! FLOW TYPE 5
+                ELSEIF(LONG.LT.CORR56*HAUT2) THEN ! 5
                   FTYP=-5
                   HAST = HAUT2
                   RAYON = HAST*LARG/(2.D0*HAST+2.D0*LARG)
                   L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                  IF(CIR.GT.0.D0) THEN
+                  IF(CIR.GT.0.D0) THEN ! 6
                     SECBUS(N) = PI*RADI2**2
-                  ELSE
+                  ELSE ! 6
                     SECBUS(N) = LARG*HAUT2
-                  ENDIF
+                  ENDIF ! 6
                   Q = -SECBUS(N)*SQRT(2.D0*GRAV*(S2-RD)
      &                                  /(CORR5*CE2+CORRV5*VALVE+TRASH))
-                ENDIF
-!             FLOW TYPE 4 SUBMERGED OUTLET
-              ELSEIF(S2.GT.(RD2+H2).AND.S1.GT.(RD1+H1)) THEN
+                ENDIF ! 5
+              ! FLOW TYPE 4 SUBMERGED OUTLET
+              ELSEIF(S2.GT.(RD2+H2).AND.S1.GT.(RD1+H1)) THEN ! 4
                 FTYP=-4
                 HAST = HAUT2
                 RAYON = HAST*LARG/(2.D0*HAST+2.D0*LARG)
                 L = 2.D0*GRAV*LONG*FRIC**2/RAYON**FOURTHIRDS
-                IF(CIR.GT.0.D0) THEN
+                IF(CIR.GT.0.D0) THEN ! 5
                   SECBUS(N) = PI*RADI2**2
-                ELSE
+                ELSE ! 5
                   SECBUS(N) = LARG*HAUT2
-                ENDIF
+                ENDIF ! 5
                 Q = -SECBUS(N)
      &              *SQRT(2.D0*GRAV*(S2-S1)/(CE2+VALVE+L+CS1+TRASH))
-              ENDIF
-!           IF THE WATER DOES NOT REACH HIGH ENOUGH TO ENTER THE CULVERT
-            ELSE
+              ENDIF ! 4
+            ! IF THE WATER DOES NOT REACH HIGH ENOUGH TO ENTER THE CULVERT
+            ELSE ! 3
               FTYP=0
               Q = 0.D0
-            ENDIF
-          ENDIF
-!       WRONG CHOICE OF OPTBUSE VALUE
-        ELSE
+            ENDIF ! 3
+          ENDIF ! 2
+        ! WRONG CHOICE OF OPTBUSE VALUE
+        ELSE ! 1
           WRITE(LU,*) 'WRONG CHOICE OF OPTBUSE VALUE'
           CALL PLANTE(1)
           STOP
+        ENDIF ! 1
+        ! NOTHING HAPPENS IF THE LOADS AT THE 2 ENDS ARE LOWER THAN
+        ! THE ELEVATION OF THE NOZZLES
+        IF((S1.LT.RD1).AND.(S2.LT.RD2)) THEN
+           Q=0.D0
         ENDIF
+        IF((HAUT1.EQ.0.D0).OR.(HAUT2.EQ.0.D0)) THEN
+           Q=0.D0
         ENDIF
-!
-!       NOTHING HAPPENS IF THE LOADS AT THE 2 ENDS ARE LOWER THAN
-!       THE ELEVATION OF THE NOZZLES
-!
-        IF(S1.LT.RD1.AND.S2.LT.RD2) Q=0.D0
-        IF(HAUT1.EQ.0.D0.OR.HAUT2.EQ.0.D0) Q=0.D0
-!
-!       FILLS OUT DBUS(N) USING RELAXATION
-!
+        ! FILLS OUT DBUS(N) USING RELAXATION
         DBUS(N)= RELAXB*Q + (1.D0-RELAXB)*DBUS(N)
-!
-!       LIMITATION WITH AVAILABLE WATER
-!
+        ! WRITE(*,*) "OG DBUS CULV ",N,' CLPB ',CLPB
+        ! LIMITATION WITH AVAILABLE WATER
         IF(DBUS(N).GT.0.D0) THEN
           DBUS(N)=MIN(QMAX1,DBUS(N))
         ELSE
-          DBUS(N)=MAX(-QMAX2,DBUS(N))
+          DBUS(N)=MAX(-1*QMAX2,DBUS(N))
         ENDIF
-!
-!       SLUICE VALVE TREATMENT (DIRECTIONALITY)
-!
+        ! SLUICE VALVE TREATMENT (DIRECTIONALITY)
         IF((CLPBUS(N).EQ.1.AND.S2.GT.S1).OR.
      &     (CLPBUS(N).EQ.2.AND.S1.GT.S2).OR.
      &     (CLPBUS(N).EQ.3).OR.
-     &     (CLPBUS(N).EQ.4))
-     &     DBUS(N) = 0.D0
-!
-!       PRINT FLOW RATES VALUES FOR EACH ACTIVE CULVERT
-! AT is the telemac model time in seconds.
-        IF((ENTET.AND.ABS(DBUS(N)).GT.1.D-4).AND.
-     &    (MAXVAL(CLPBUS).LE.3)) THEN
-          WRITE(LU,*)'CULV: ',N,', Q = ',DBUS(N),' M³/S'
+     &     (CLPBUS(N).EQ.4)) THEN
+          DBUS(N) = 0.D0
         ENDIF
-!
-!  TREATS THE VELOCITIES AT THE SOURCES
-!  SAME APPROACH FOR VELOCITY AND TRACER
-!
-        IF(DBUS(N).GT.0.D0) THEN
+        ! PRINT FLOW RATES VALUES FOR EACH ACTIVE CULVERT
+        ! Should only be for the ones calculated in the original form
+        ! AT is the telemac model time in seconds.
+        IF (ENTET.AND.ABS(DBUS(N)).GT.1.D-4) THEN
+          WRITE(LU,*)'CULV: ',N,', Q = ',DBUS(N),' M3/S'
+        ENDIF
+        !  TREATS THE VELOCITIES AT THE SOURCES
+        !  SAME APPROACH FOR VELOCITY AND TRACER
+        IF(DBUS(N).GT.0.D0) THEN ! vel calc
           UBUS(2,N) = (COS(D2)*DBUS(N)/SECBUS(N)) * COS(ANGBUS(N,2))
           VBUS(2,N) = (COS(D2)*DBUS(N)/SECBUS(N)) * SIN(ANGBUS(N,2))
           IF(I1.GT.0) THEN
@@ -985,12 +1060,14 @@
             UBUS(2,N) = P_MAX(UBUS(2,N))+P_MIN(UBUS(2,N))
             VBUS(2,N) = P_MAX(VBUS(2,N))+P_MIN(VBUS(2,N))
           ENDIF
-        ENDIF
+        ENDIF ! End of vel
 !
 !       TREATS THE TRACER :
 !       NOTA : NBUSE + N <==> N,2
 !                      N <==> N,1
 !
+        ENDIF ! End TRS Option I hope... not[1137,1062]
+
         IF(NTRAC.GT.0) THEN
           DO ITRAC=1,NTRAC
             IF(DBUS(N).GE.0.D0) THEN ! I1 --> I2
@@ -1035,16 +1112,21 @@
      &         +P_MIN(TBUS%ADR(ITRAC)%P%R(N))
             ENDIF
           ENDDO
-        ENDIF ! End TRS vs normal culvert loop
+        ENDIF ! End tracer
 !
 !  END OF THE LOOP OVER THE CULVERTS
-!
-      ENDDO ! N
-      IF (IPID.EQ.0) THEN
-        IF(ENTET) THEN
-          CALL TRS_WRITE_STATUS(CTH)
-          K = NEWUNIT()
-          CALL TRS_WRITE_RESULTS(CTH, K)
+!       
+        PRIVE%ADR(1)%P%R(I1)=DBUS(N)
+        PRIVE%ADR(1)%P%R(I2)=DBUS(N)
+        IF (NCSIZE.GT.1) THEN
+          PRIVE%ADR(1)%P%R(I1)=P_MAX(DBUS(N)) + P_MIN(DBUS(N))
+          PRIVE%ADR(1)%P%R(I2)=P_MAX(DBUS(N)) + P_MIN(DBUS(N))
         ENDIF
+      ENDDO ! N
+!     PRINT INFO TO FILE AND USER
+      IF ((IPID.EQ.0).AND.ENTET) THEN
+        CALL TRS_WRITE_STATUS(CTH)
+        K = NEWUNIT()
+        CALL TRS_WRITE_RESULTS(CTH, K)
       ENDIF
       END SUBROUTINE BUSE
