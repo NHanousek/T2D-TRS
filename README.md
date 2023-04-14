@@ -1,6 +1,6 @@
 # T2D-TRS
- A clean version of the tidal range scheme model for Telemac, available to those interested.
-
+ A clean version of the tidal range scheme model for Telemac, available to those interested. Originally developed by [Bin Guo](https://www.researchgate.net/profile/Bin-Guo-32).
+ 
 ## To do:
  - Tidy folders
  - Add alternate operation examples
@@ -46,7 +46,7 @@ Key input data information
 |CV      |Loss coeff due to valve       |Weighting for control points|
 |C56     |Constant to determ flow type  |Parrallel sluicing for turbine: 0 = FALSE, 1 = TRUE|
 |CV5     |Correction for type 5 flow    |Turbine type: 1 = Turb+Pump, 2 = Turb Only, 3 = Pump Only|
-|C5      |Correction for type 5 flow    |unused|
+|C5      |Correction for type 5 flow    |Number of turbines at node|
 |CT      |Loss coeff for trash screen   |Tidal Range Scheme Number|
 |HAUT2   |Height of construction p2     |Minimum height for safe operation at p2|
 |FRIC    |Manning Strickler coeff       |Friction of the sluice gate sides?|
