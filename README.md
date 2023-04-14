@@ -1,16 +1,15 @@
 # T2D-TRS
- Build a clean version of the tidal range scheme model for Telemac
+ A clean version of the tidal range scheme model for Telemac, available to those interested.
 
 ## To do:
  - Tidy folders
+ - Add alternate operation examples
 
-### Key Planned Features:
- - Multiple independent schemes (through making the whole system arrays)
- - Fully flexible scheme operations
- - Four example models:
+##  Example models:
     - Simple lagoon
-    - Simple Hydro-electric scheme
-    - Severn Swansea + West Somerset Lagoon
+    - Simple twin lagoons
+    - West Somerset Fixed
+    - West Somerset Flexible Pumped
 
 ## Guide to Operation
 Key input data information
@@ -59,6 +58,3 @@ Key input data information
 |A2      |Angle of pipe-x_axis p2       |SAME/Unused|
 |AA      |1: Auto angles, 2: User       |1: Auto individual, 2: User, 3: Mean-type|
 
-## Flowcharts
-
-### Mode Selection

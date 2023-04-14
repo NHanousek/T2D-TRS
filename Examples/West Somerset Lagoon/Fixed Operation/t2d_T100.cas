@@ -1,0 +1,151 @@
+/---------------------------------------------------------------------
+/ TELEMAC2D Version v8p3 22-Aug-2017
+/ Severn WSL from Bins model configs - using TPXO boundary
+/ Fixed operation
+/---------------------------------------------------------------------
+
+/---------------------------------------------------------------------
+/ BOUNDARY CONDITIONS
+/---------------------------------------------------------------------
+
+STAGE-DISCHARGE CURVES	= 0
+MASS-LUMPING ON H 	= 1
+VERTICAL STRUCTURES	= NO
+
+/NUMBER OF TRACERS  = 1
+/COEFFICIENT FOR DIFFUSION OF TRACERS =0.1
+/OPTION FOR THE DIFFUSION OF TRACERS  = 2  
+/SCHEME FOR ADVECTION OF TRACERS = 13
+TREATMENT OF NEGATIVE DEPTHS = 1
+OPTION FOR THE TREATMENT OF TIDAL FLATS=1
+
+/---------------------------------------------------------------------
+/ EQUATIONS
+/---------------------------------------------------------------------
+
+AIR PRESSURE                         = true
+LAW OF BOTTOM FRICTION               = 4
+ROUGHNESS COEFFICIENT OF BOUNDARIES  = 0.025
+FRICTION COEFFICIENT                 = 0.025
+BOTTOM SMOOTHINGS                    = 1
+TURBULENCE MODEL                     = 3
+CORIOLIS        		     = YES
+
+/---------------------------------------------------------------------
+/ EQUATIONS, BOUNDARY CONDITIONS
+/---------------------------------------------------------------------
+
+OPTION FOR TIDAL BOUNDARY CONDITIONS 		= 1
+TIDAL DATA BASE 			        = 2
+COEFFICIENT TO CALIBRATE TIDAL RANGE		= 1.0
+COEFFICIENT TO CALIBRATE TIDAL VELOCITIES	= 1.0
+COEFFICIENT TO CALIBRATE SEA LEVEL		= 0.0
+GEOGRAPHIC SYSTEM 			        = 1 /lat-long
+SPHERICAL COORDINATES			        = YES
+SPATIAL PROJECTION TYPE		          	= 3
+LATITUDE OF ORIGIN POINT 		        = 00.0
+LONGITUDE OF ORIGIN POINT 		        = 00.0
+RESULT FILE IN LONGITUDE-LATITUDE 	    	= YES
+BINARY DATABASE 1 FOR TIDE='path\to\TPXO\data\hf.AO_2008.out'
+BINARY DATABASE 2 FOR TIDE='path\to\TPXO\data\uv.AO_2008.out'
+
+/---------------------------------------------------------------------
+/ EQUATIONS, INITIAL CONDITIONS
+/---------------------------------------------------------------------
+
+/INITIAL CONDITIONS ='CONSTANT ELEVATION'
+/INITIAL ELEVATION  =1.49
+
+INITIAL CONDITIONS      		= 'TPXO SATELLITE ALTIMETRY'
+
+/---------------------------------------------------------------------
+/ INPUT-OUTPUT, FILES
+/---------------------------------------------------------------------
+
+GEOMETRY FILE            ='SLF_T100.slf'
+RESULTS FILE             ='r2d_T100.slf'
+BOUNDARY CONDITIONS FILE ='CLI_T100.cli'
+
+/---------------------------------------------------------------------
+/ INPUT-OUTPUT, GRAPHICS AND LISTING
+/---------------------------------------------------------------------
+
+MASS-BALANCE                    =true
+VARIABLES FOR GRAPHIC PRINTOUTS =U,V,B,H,L,S
+/ ,MAXZ,MAXV
+LISTING PRINTOUT PERIOD         =150
+GRAPHIC PRINTOUT PERIOD         =300
+INFORMATION ABOUT SOLVER        = true
+
+/---------------------------------------------------------------------
+/ INPUT-OUTPUT, INFORMATION
+/---------------------------------------------------------------------
+
+TITLE ='Severn, BASIC TRS, using TPXO'
+
+/---------------------------------------------------------------------
+/ NUMERICAL PARAMETERS
+/---------------------------------------------------------------------
+
+DISCRETIZATIONS IN SPACE       =12;11
+CHECKING THE MESH 	       =YES
+CONTINUITY CORRECTION          =true
+TIDAL FLATS                    =YES
+/TREATMENT OF TIDAL FLATS       =1 (UNRECOGNISED KEYWORD)
+ORIGINAL DATE OF TIME          =2012;08;11
+ORIGINAL HOUR OF TIME          =13;00;00
+TREATMENT OF THE LINEAR SYSTEM =2
+
+/FREE SURFACE GRADIENT COMPATABILITY = 0.9 (unrecognised?)
+H CLIPPING = YES
+/OPTION FOR THE DIFFUSION OF VELOCITIES = 1
+/TYPE OF ADVECTION		=1;5
+/SOLVER				=2
+/PRECONDITIONING			=2
+
+/FINITE VOLUME SCHEME           =0
+TIME STEP                      =2
+
+/DURATION                       =1342800
+DURATION                       =671400
+/DURATION                       =342000                                           /3.95 days  
+/DURATION                       =172800		/ 48 hours
+/DURATION                       =86400                                           / One day 
+/DURATION    = 151200
+SUPG OPTION                    =1;1;1;1 /(for -ve depths = 1)
+/SUPG OPTION 			=0;0 (for -ve depths != 1 i think)
+
+PARALLEL PROCESSORS            =16
+
+/---------------------------------------------------------------------
+/ NUMERICAL PARAMETERS, SOLVER
+/---------------------------------------------------------------------
+
+SOLVER ACCURACY =1.E-5
+
+/---------------------------------------------------------------------
+/ NUMERICAL PARAMETERS, VELOCITY-CELERITY-HIGHT
+/---------------------------------------------------------------------
+
+IMPLICITATION FOR VELOCITY =0.6
+IMPLICITATION FOR DEPTH    =0.6
+
+/---------------------------------------------------------------------
+/ PHYSICAL CONSTANTS
+/---------------------------------------------------------------------
+
+WATER DENSITY =1020.
+
+/---------------------------------------------------------------------
+/ TIDAL RANGE COMPONENTS
+/---------------------------------------------------------------------
+
+
+OPTION FOR CULVERTS  = 1
+NUMBER OF CULVERTS   = 109
+
+CULVERTS DATA FILE	= 'T100_culvertdata.txt'
+FORTRAN FILE 		= 'user_fortran'
+
+MAXIMUM NUMBER OF ITERATIONS FOR SOLVER 	=150
+MAXIMUM NUMBER OF ITERATIONS FOR K AND EPSILON	=150
