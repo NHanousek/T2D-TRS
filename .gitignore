@@ -1,3 +1,5 @@
 
 .DS_Store
 *.vtk
+Examples/Simple/one-scheme/r2d_Simple_Lagoon.slf
+Examples/Simple/multi-schemes/r2d_Simple-Two.slf
