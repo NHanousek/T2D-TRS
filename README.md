@@ -1,9 +1,9 @@
 # T2D-TRS
- A clean version of the tidal range scheme model for Telemac, available to those interested. Originally developed by [Bin Guo](https://www.researchgate.net/profile/Bin-Guo-32).
+ A clean version of the tidal range scheme model for Telemac, available to those interested. Originally developed by [Bin Guo](https://www.researchgate.net/profile/Bin-Guo-32), under the supervision and guidance of [Reza Ahmadian](https://www.researchgate.net/profile/Reza-Ahmadian-2) and [Roger Falconer](https://www.researchgate.net/profile/Roger-Falconer).
  
 ## To do:
- - Tidy folders
- - Add alternate operation examples
+ - More testing and validation
+ - Add further operation examples
 
 ##  Example models:
     - Simple lagoon
