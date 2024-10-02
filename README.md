@@ -1,34 +1,42 @@
 # T2D-TRS
  A clean version of the tidal range scheme model for Telemac, available to those interested. Originally developed by [Bin Guo](https://www.researchgate.net/profile/Bin-Guo-32), under the supervision and guidance of [Reza Ahmadian](https://www.researchgate.net/profile/Reza-Ahmadian-2) and [Roger Falconer](https://www.researchgate.net/profile/Roger-Falconer).
- 
-## To do:
- - More testing and validation
- - Add further operation examples
+
+## Publications
+
+- N. Hanousek, *Numerical modelling of tidal energy devices and structures as part of net zero*, Ph.D. Thesis, Cardiff University (2023)
 
 ##  Example models:
-    - Simple lagoon
-    - Simple twin lagoons
-    - West Somerset Fixed
-    - West Somerset Flexible Pumped
+
+- Simple lagoon
+  - Basic single scheme model runnning in fixed operation
+- Simple twin lagoons
+  - Simple model containing twin schemes, each runnning in fixed operation
+- West Somerset Fixed
+  - [West Somerset Lagoon](https://tidalengineering.co.uk/west-somerset-lagoon/location-and-scheme-description/) model in fixed operation
+- West Somerset Flexible Pumped
+  - [West Somerset Lagoon](https://tidalengineering.co.uk/west-somerset-lagoon/location-and-scheme-description/) model in flexible operation
 
 ## Guide to Operation
+
 Key input data information
 
 ### MODES:
+
 | N | Description | Start condition |
 |:-:|------------|-----------|
- 0 | Initial sluice mode | Time = 0|
- 1 | High water holding |  HD >= H_START|
- 2 | Ebb generation |      HD <= H_END|
- 3 | Ebb sluicing |        HD ~= 0.0|
+| 0 | Initial sluice mode | Time = 0|
+| 1 | High water holding |  HD >= H_START|
+| 2 | Ebb generation |      HD <= H_END|
+| 3 | Ebb sluicing |        HD ~= 0.0|
 |-1| Ebb pumping |         WL_IN <= PUMP_TARG|
- 4 | Low water holding  |  HD >= H_START|
-|5 | Flood generation |    HD <= H_END|
- 6 | Flood sluicing |      HD ~= 0.0|
+| 4 | Low water holding  |  HD >= H_START|
+| 5 | Flood generation |    HD <= H_END|
+| 6 | Flood sluicing |      HD ~= 0.0|
 |-2 | FLood pumping |      WL_IN <= PUMP_TARG|
 
 
 ### Culvert File
+
 |Key      |Old use                      |New Use|
 |---------|-----------------------------|-----------------------------|
 |I1      |First culvert point           |Upstream point|
