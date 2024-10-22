@@ -3,7 +3,8 @@
 
 ## Publications
 
-- N. Hanousek, *Numerical modelling of tidal energy devices and structures as part of net zero*, Ph.D. Thesis, Cardiff University (2023)
+- N. Hanousek; *Numerical modelling of tidal energy devices and structures as part of net zero*, Ph.D. Thesis, Cardiff University (2023) [URI](https://orca.cardiff.ac.uk/id/eprint/167131)
+- E. Roome, P. Robins, R. Ahmadian, M. Austen, N. Hanousek, B. Gup, S. Neill; *Assessing hydrodynamic impacts of tidal range energy impoundments in UK coastal waters*, Renewable Energy (2024) [DOI](https://doi.org/10.1016/j.renene.2024.121601)
 
 ##  Example models:
 
