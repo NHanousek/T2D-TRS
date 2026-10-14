@@ -4,14 +4,14 @@
 ## Publications
 
 - N. Hanousek; *Numerical modelling of tidal energy devices and structures as part of net zero*, Ph.D. Thesis, Cardiff University (2023) [URI](https://orca.cardiff.ac.uk/id/eprint/167131)
-- E. Roome, P. Robins, R. Ahmadian, M. Austen, N. Hanousek, B. Gup, S. Neill; *Assessing hydrodynamic impacts of tidal range energy impoundments in UK coastal waters*, Renewable Energy (2024) [DOI](https://doi.org/10.1016/j.renene.2024.121601)
+- E. Roome, P. Robins, R. Ahmadian, M. Austen, N. Hanousek, B. Guo, S. Neill; *Assessing hydrodynamic impacts of tidal range energy impoundments in UK coastal waters*, Renewable Energy (2024) [DOI](https://doi.org/10.1016/j.renene.2024.121601)
 
 ##  Example models:
 
 - Simple lagoon
-  - Basic single scheme model runnning in fixed operation
+  - Basic single scheme model running in fixed operation
 - Simple twin lagoons
-  - Simple model containing twin schemes, each runnning in fixed operation
+  - Simple model containing twin schemes, each running in fixed operation
 - West Somerset Fixed
   - [West Somerset Lagoon](https://tidalengineering.co.uk/west-somerset-lagoon/location-and-scheme-description/) model in fixed operation
 - West Somerset Flexible Pumped
@@ -43,7 +43,7 @@ Key input data information
 |I1      |First culvert point           |Upstream point|
 |I2      |Second culvert point          |Downstream point|
 |CE1     |Head loss coeff as inlet p1   |Ebb head loss coeff generate/sluice|
-|CE2     |Head loss coedd as inlet p2   |Flood head loss coeff generate/sluice|
+|CE2     |Head loss coeff as inlet p2   |Flood head loss coeff generate/sluice|
 |CS1     |Head loss coeff outlet p1     |Ebb head loss coeff pumping|
 |CS2     |Head loss coeff outlet p2     |Flood head loss coeff pumping|
 |LRG     |Width of the culvert          |Width of sluice gate, turbine diameter|
